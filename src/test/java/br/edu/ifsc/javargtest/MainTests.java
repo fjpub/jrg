@@ -7,8 +7,10 @@ package br.edu.ifsc.javargtest;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.*;
-import com.github.javaparser.ast.stmt.*;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.type.*;
+import com.github.javaparser.ast.type.PrimitiveType.Primitive;
+import com.github.javaparser.printer.DotPrinter;
 import java.io.*;
 import java.util.*;
 import net.jqwik.api.*;
@@ -23,13 +25,20 @@ public class MainTests {
         "src/main/java/br/edu/ifsc/javarg/MainClass.java";
     private CompilationUnit skeleton;
     private ClassTable ct;
+    private Type desiredType;
     
-    public MainTests() throws FileNotFoundException {
+    public MainTests() throws FileNotFoundException, IOException {
         this.skeleton = StaticJavaParser.parse(new File(SKELETON_PATH)); 
         this.ct = new ClassTable(loadImports());
         
         System.out.println(this.skeleton.toString());
+        dumpAST();
+        
+        // @TODO: Modificar isso depois
+        this.desiredType = new PrimitiveType(Primitive.CHAR);
     }
+    
+    // Auxiliary methods
     
     private List<String> loadImports() {
         NodeList<ImportDeclaration> imports = this.skeleton.getImports();
@@ -44,6 +53,16 @@ public class MainTests {
         
         return list;
     }
+    
+    private void dumpAST() throws IOException {
+        DotPrinter printer = new DotPrinter(true);
+        try (FileWriter fileWriter = new FileWriter("ast.dot");
+            PrintWriter printWriter = new PrintWriter(fileWriter)) {
+            printWriter.print(printer.output(this.skeleton));
+        }
+    }
+    
+    // Properties to be tested
     
     @Property
     boolean checkPrimitiveType(
@@ -60,6 +79,21 @@ public class MainTests {
         System.out.println("Tipo gerado: " + t.asString());
         return true;
     }
+    
+    @Property
+    boolean checkGenPrimitiveType(
+        @ForAll("genPrimitiveType") LiteralExpr e
+    ) {
+        
+        // Example: dá para usar coisas dessa forma (aparentemente)
+        //LiteralExpr e = genPrimitiveType().sample();
+        
+        System.out.println("Expressão gerada: " + e.toString());
+        
+        return true;        
+    }
+    
+    // Generation methods
     
     @Provide
     Arbitrary<PrimitiveType.Primitive> primitiveTypes() {
@@ -78,22 +112,86 @@ public class MainTests {
         
         return Arbitraries.of(list);
     }
+        
+    // Generating expressions
     
     @Provide
-    Arbitrary<BlockStmt> attributeAccess(Type t, String f) {
-        BlockStmt b = new BlockStmt();        
+    Arbitrary<Expression> genExpression(Type t) {
+        Expression e = null;
         
-        // Gerar um bloco: acesso do campo f em um objeto do tipo t
+        // implementar
         
-        return Arbitraries.just(b);
+        return Arbitraries.just(e);
+    }
+    
+    // Generating primitive types
+    
+    @Provide
+    Arbitrary<LiteralExpr> genPrimitiveType() {
+        LiteralExpr e = null;
+        
+        System.out.println("IntegerLiteral[1]");
+        
+        switch (this.desiredType.asPrimitiveType().getType()) {
+            case BOOLEAN: 
+                // @TODO: Descobrir como fazer
+                e = new BooleanLiteralExpr(false);
+                break;
+            case CHAR:
+                e = new CharLiteralExpr(Arbitraries.chars().ascii().sample());
+                break;
+            case DOUBLE:
+                // implementar
+                break;
+            case FLOAT: 
+                // implementar 
+                break;
+            case INT:
+                e = new IntegerLiteralExpr(String.valueOf(Arbitraries.integers().sample()));
+                break;
+        }
+        
+        System.out.println("IntegerLiteral[2]: " + e.toString());
+        
+        return Arbitraries.just(e);
     }
     
     @Provide
-    Arbitrary<BlockStmt> objectCreation(Type t) {
-        BlockStmt b = new BlockStmt();
+    Arbitrary<LiteralExpr> genPrimitiveString() {
+        LiteralExpr e = null;
         
-        // Gerar um block: criação de um objeto to tipo t
+        // Implementar 
         
-        return Arbitraries.just(b);
+        return Arbitraries.just(e);
     }
+    
+    // Generating expressions
+    
+    @Provide
+    Arbitrary<ObjectCreationExpr> genObjectCreation(Type t) {
+        ObjectCreationExpr e = new ObjectCreationExpr();
+        
+        // criação de um objeto to tipo t
+        
+        return Arbitraries.just(e);
+    }
+    
+    @Provide
+    Arbitrary<FieldAccessExpr> genAttributeAccess(Type t) {
+        FieldAccessExpr e = new FieldAccessExpr();        
+        
+        // acesso a um atributo
+        
+        return Arbitraries.just(e);
+    }
+    
+    @Provide
+    Arbitrary<MethodCallExpr> genMethodInvokation(Type t) {
+        MethodCallExpr e = new MethodCallExpr();
+        
+        // invocação de método
+        
+        return Arbitraries.just(e);
+    }
+    
 }
