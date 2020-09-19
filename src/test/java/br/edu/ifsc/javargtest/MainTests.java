@@ -25,7 +25,6 @@ public class MainTests {
         "src/main/java/br/edu/ifsc/javarg/MainClass.java";
     private CompilationUnit skeleton;
     private ClassTable ct;
-    private Type desiredType;
     
     public MainTests() throws FileNotFoundException, IOException {
         this.skeleton = StaticJavaParser.parse(new File(SKELETON_PATH)); 
@@ -33,9 +32,6 @@ public class MainTests {
         
         System.out.println(this.skeleton.toString());
         dumpAST();
-        
-        // @TODO: Modificar isso depois
-        this.desiredType = new PrimitiveType(Primitive.CHAR);
     }
     
     // Auxiliary methods
@@ -81,14 +77,11 @@ public class MainTests {
     }
     
     @Property
-    boolean checkGenPrimitiveType(
-        @ForAll("genPrimitiveType") LiteralExpr e
-    ) {
+    boolean checkGenPrimitiveType() {
         
-        // Example: dá para usar coisas dessa forma (aparentemente)
-        //LiteralExpr e = genPrimitiveType().sample();
-        
-        System.out.println("Expressão gerada: " + e.toString());
+        Arbitrary<LiteralExpr> e = genPrimitiveType(new PrimitiveType(Primitive.INT));
+                
+        System.out.println("Expressão gerada: " + e.sample().toString());
         
         return true;        
     }
@@ -127,19 +120,16 @@ public class MainTests {
     // Generating primitive types
     
     @Provide
-    Arbitrary<LiteralExpr> genPrimitiveType() {
+    Arbitrary<LiteralExpr> genPrimitiveType(PrimitiveType t) {
         LiteralExpr e = null;
         
         System.out.println("IntegerLiteral[1]");
         
-        switch (this.desiredType.asPrimitiveType().getType()) {
+        switch (t.getType()) {
             case BOOLEAN: 
-                // @TODO: Descobrir como fazer
-                e = new BooleanLiteralExpr(false);
-                break;
+                return Arbitraries.of(true, false).map(b -> new BooleanLiteralExpr(b));
             case CHAR:
-                e = new CharLiteralExpr(Arbitraries.chars().ascii().sample());
-                break;
+                return Arbitraries.chars().ascii().map(c -> new CharLiteralExpr(c));
             case DOUBLE:
                 // implementar
                 break;
@@ -147,8 +137,7 @@ public class MainTests {
                 // implementar 
                 break;
             case INT:
-                e = new IntegerLiteralExpr(String.valueOf(Arbitraries.integers().sample()));
-                break;
+                return Arbitraries.integers().map(i -> new IntegerLiteralExpr(String.valueOf(i)));
         }
         
         System.out.println("IntegerLiteral[2]: " + e.toString());
