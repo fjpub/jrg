@@ -5,6 +5,9 @@
  */
 package br.edu.ifsc.javargtest;
 
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.PrimitiveType;
+import com.github.javaparser.ast.type.Type;
 import java.util.List;
 import java.lang.reflect.*;
 import java.util.ArrayList;
@@ -48,4 +51,24 @@ public class ClassTable {
         
         return list;
     }
+    
+    public List<String> getClassFieldTypes(String cname) throws ClassNotFoundException {
+        List<String> list = getClassFields(cname).stream()
+                .map(f -> f.getGenericType().getTypeName())
+                .collect(Collectors.toList());
+        
+        return list;        
+    }
+    
+
+    public List<Method> getClassMethods(String cname) {
+        List<Method> list = new ArrayList<>();
+        
+        // Implementar
+        
+        return list;
+    }
+    
+    // Fazer o mesmo para os construtores 
+    
 }

@@ -6,6 +6,9 @@ import br.edu.ifsc.javargexamples.C;
 
 public class MainClass {
     
+    public int fieldExample1;
+    public A fieldExample2;
+    
     public static void main(String args[]) {
         A aObj = new A();
         int a = aObj.getA();

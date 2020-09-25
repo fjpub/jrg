@@ -12,7 +12,9 @@ import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.type.PrimitiveType.Primitive;
 import com.github.javaparser.printer.DotPrinter;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 import net.jqwik.api.*;
 
 /**
@@ -110,11 +112,13 @@ public class MainTests {
     
     @Provide
     Arbitrary<Expression> genExpression(Type t) {
-        Expression e = null;
+        return Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType()));
+    }
+    
+    @Provide
+    Arbitrary<NodeList<Expression>> genExpressionList(List<Type> types) {
         
-        // implementar
-        
-        return Arbitraries.just(e);
+        return null;
     }
     
     // Generating primitive types
@@ -123,24 +127,19 @@ public class MainTests {
     Arbitrary<LiteralExpr> genPrimitiveType(PrimitiveType t) {
         LiteralExpr e = null;
         
-        System.out.println("IntegerLiteral[1]");
-        
         switch (t.getType()) {
             case BOOLEAN: 
-                return Arbitraries.of(true, false).map(b -> new BooleanLiteralExpr(b));
+                return Arbitraries.of(true, false).map(b -> new BooleanLiteralExpr(b));                
             case CHAR:
                 return Arbitraries.chars().ascii().map(c -> new CharLiteralExpr(c));
             case DOUBLE:
                 // implementar
                 break;
             case FLOAT: 
-                // implementar 
-                break;
+                return Arbitraries.floats().map(n -> new DoubleLiteralExpr(n));
             case INT:
                 return Arbitraries.integers().map(i -> new IntegerLiteralExpr(String.valueOf(i)));
         }
-        
-        System.out.println("IntegerLiteral[2]: " + e.toString());
         
         return Arbitraries.just(e);
     }
@@ -157,30 +156,42 @@ public class MainTests {
     // Generating expressions
     
     @Provide
-    Arbitrary<ObjectCreationExpr> genObjectCreation(Type t) {
-        ObjectCreationExpr e = new ObjectCreationExpr();
+    Arbitrary<ObjectCreationExpr> genObjectCreation(ClassOrInterfaceType t) throws ClassNotFoundException {
+        List<String> fields = this.ct.getClassFieldTypes(t.getNameAsString());    
         
-        // criação de um objeto to tipo t
+        List<Type> types = fields.stream()
+                .map(ReflectParserTranslator::reflectToParserType)
+                .collect(Collectors.toList());
         
-        return Arbitraries.just(e);
+        return genExpressionList(types).map(el -> new ObjectCreationExpr(null, t, el));
+        
+        // 1 - Olhar os construtores e ver o tipo dos parâmetros
+        // 2 - Traduzir os tipos da Reflect para Parser
+        // 3 - Gerar a lista de parâmetros
+        // 4 - Gerar o object creation
+        
+        // new <Nome Classe>( <Lista Parametros> )
+        
     }
     
     @Provide
-    Arbitrary<FieldAccessExpr> genAttributeAccess(Type t) {
-        FieldAccessExpr e = new FieldAccessExpr();        
+    Arbitrary<FieldAccessExpr> genAttributeAccess(ClassOrInterfaceType t, String f) {
+        Arbitrary<Expression> e = genExpression(t);
         
-        // acesso a um atributo
+        return e.map(obj -> new FieldAccessExpr(obj, f));
         
-        return Arbitraries.just(e);
+        // <expressao> . <campo>
     }
     
     @Provide
-    Arbitrary<MethodCallExpr> genMethodInvokation(Type t) {
+    Arbitrary<MethodCallExpr> genMethodInvokation(ClassOrInterfaceType t, String m) {
         MethodCallExpr e = new MethodCallExpr();
         
         // invocação de método
         
         return Arbitraries.just(e);
+        
+        // <expressao> . <nome_metodo> ( <lista_parametros> )
     }
     
 }
