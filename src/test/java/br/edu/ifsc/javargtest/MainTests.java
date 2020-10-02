@@ -15,7 +15,9 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
+import static javassist.util.proxy.FactoryHelper.primitiveTypes;
 import net.jqwik.api.*;
+import org.junit.Test;
 
 /**
  *
@@ -79,13 +81,25 @@ public class MainTests {
     }
     
     @Property
-    boolean checkGenPrimitiveType() {
+    boolean checkGenPrimitiveType(
+        @ForAll("primitiveTypes") PrimitiveType.Primitive t
+    ){
         
-        Arbitrary<LiteralExpr> e = genPrimitiveType(new PrimitiveType(Primitive.INT));
-                
+        Arbitrary<LiteralExpr> e = genPrimitiveType(new PrimitiveType(t));
+        
+        // LiteralExpr e = primitiveTypes().map(t -> genPrimitiveType(new PrimitiveType(t)));
         System.out.println("Expressão gerada: " + e.sample().toString());
-        
+ 
         return true;        
+    }
+     @Test
+    boolean checkGenPrimitiveString(){
+        
+        Arbitrary<LiteralExpr> s = genPrimitiveString();
+        
+        System.out.println("Frase gerada: " + s.sample());
+        
+        return true;
     }
     
     // Generation methods
@@ -115,6 +129,7 @@ public class MainTests {
         return Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType()));
     }
     
+    
     @Provide
     Arbitrary<NodeList<Expression>> genExpressionList(List<Type> types) {
         
@@ -129,16 +144,21 @@ public class MainTests {
         
         switch (t.getType()) {
             case BOOLEAN: 
-                return Arbitraries.of(true, false).map(b -> new BooleanLiteralExpr(b));                
+                return Arbitraries.of(true, false).map(b -> new BooleanLiteralExpr(b));
             case CHAR:
                 return Arbitraries.chars().ascii().map(c -> new CharLiteralExpr(c));
             case DOUBLE:
-                // implementar
-                break;
+                return Arbitraries.doubles().map(d -> new DoubleLiteralExpr(String.valueOf(d)));
             case FLOAT: 
-                return Arbitraries.floats().map(n -> new DoubleLiteralExpr(n));
+                return Arbitraries.floats().map(f -> new DoubleLiteralExpr(String.valueOf(f)));   
             case INT:
                 return Arbitraries.integers().map(i -> new IntegerLiteralExpr(String.valueOf(i)));
+            case LONG:
+                return Arbitraries.longs().map(l -> new LongLiteralExpr(String.valueOf(l)));
+            case BYTE:
+                return Arbitraries.bytes().map(bt -> new IntegerLiteralExpr(String.valueOf(bt)));
+            case SHORT:
+                return Arbitraries.shorts().map(s -> new IntegerLiteralExpr(String.valueOf(s))); 
         }
         
         return Arbitraries.just(e);
@@ -146,11 +166,8 @@ public class MainTests {
     
     @Provide
     Arbitrary<LiteralExpr> genPrimitiveString() {
-        LiteralExpr e = null;
+       return Arbitraries.strings().ascii().map(S -> new StringLiteralExpr(String.valueOf(S)));
         
-        // Implementar 
-        
-        return Arbitraries.just(e);
     }
     
     // Generating expressions
@@ -162,7 +179,7 @@ public class MainTests {
         List<Type> types = fields.stream()
                 .map(ReflectParserTranslator::reflectToParserType)
                 .collect(Collectors.toList());
-        
+
         return genExpressionList(types).map(el -> new ObjectCreationExpr(null, t, el));
         
         // 1 - Olhar os construtores e ver o tipo dos parâmetros
