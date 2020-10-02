@@ -61,14 +61,30 @@ public class ClassTable {
     }
     
 
-    public List<Method> getClassMethods(String cname) {
+   public List<Method> getClassMethods(String cname) throws ClassNotFoundException{
         List<Method> list = new ArrayList<>();
-        
-        // Implementar
-        
+
+        Class c = Class.forName(cname);
+
+        Method m[] = c.getDeclaredMethods();
+
+        list.addAll(Arrays.asList(m));
+
         return list;
     }
     
     // Fazer o mesmo para os construtores 
+   public List<Constructor> getClassConstructors(String cname) throws ClassNotFoundException{
+       List<Constructor> list = new ArrayList<>();
+       
+       Class c = Class.forName(cname);
+       
+       Constructor ct[] = c.getDeclaredConstructors();
+       
+       list.addAll(Arrays.asList(ct));
+       
+       return list;
+       
+   }
     
 }
