@@ -10,7 +10,7 @@ public class MainClass {
     public A fieldExample2;
     
     public static void main(String args[]) {
-        A aObj = new A();
+        A aObj = new A(5);
         int a = aObj.getA();
         int b = new B().b;
         B bOjb = new C().getB();

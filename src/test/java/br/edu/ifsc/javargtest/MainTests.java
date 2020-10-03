@@ -12,9 +12,11 @@ import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.type.PrimitiveType.Primitive;
 import com.github.javaparser.printer.DotPrinter;
 import java.io.*;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import static javassist.util.proxy.FactoryHelper.primitiveTypes;
 import net.jqwik.api.*;
 import org.junit.Test;
@@ -34,8 +36,8 @@ public class MainTests {
         this.skeleton = StaticJavaParser.parse(new File(SKELETON_PATH)); 
         this.ct = new ClassTable(loadImports());
         
-        System.out.println(this.skeleton.toString());
-        dumpAST();
+        //System.out.println(this.skeleton.toString());
+        //dumpAST();
     }
     
     // Auxiliary methods
@@ -76,28 +78,38 @@ public class MainTests {
     boolean checkClassOrInterfaceType(
         @ForAll("classOrInterfaceTypes") ClassOrInterfaceType t
     ) {
-        System.out.println("Tipo gerado: " + t.asString());
+        System.out.println("Classe gerada: " + t.asString());
         return true;
     }
     
-    @Property
-    boolean checkGenPrimitiveType(
-        @ForAll("primitiveTypes") PrimitiveType.Primitive t
-    ){
+    @Example
+    boolean checkGenPrimitiveType(){
+        Arbitrary<PrimitiveType.Primitive> t = primitiveTypes();
+        Arbitrary<LiteralExpr> e = t.flatMap(tp -> genPrimitiveType(new PrimitiveType(tp)));
         
-        Arbitrary<LiteralExpr> e = genPrimitiveType(new PrimitiveType(t));
-        
-        // LiteralExpr e = primitiveTypes().map(t -> genPrimitiveType(new PrimitiveType(t)));
-        System.out.println("Expressão gerada: " + e.sample().toString());
+        System.out.println("Expressão gerada (tipo primitivo): " + e.sample().toString());
  
         return true;        
     }
-     @Test
+    
+    @Example
     boolean checkGenPrimitiveString(){
         
         Arbitrary<LiteralExpr> s = genPrimitiveString();
         
         System.out.println("Frase gerada: " + s.sample());
+        
+        return true;
+    }
+    
+    @Property 
+    boolean checkGenObjectCreation() throws ClassNotFoundException {
+        ClassOrInterfaceType c = new ClassOrInterfaceType();
+        c.setName("br.edu.ifsc.javargexamples.A");
+        
+        Arbitrary<ObjectCreationExpr> e = genObjectCreation(c);
+        
+        System.out.println("ObjectCreation gerado: " + e.sample().toString());
         
         return true;
     }
@@ -133,7 +145,15 @@ public class MainTests {
     @Provide
     Arbitrary<NodeList<Expression>> genExpressionList(List<Type> types) {
         
-        return null;
+        // @TODO: fix it later -- avoid the use of sample()
+        List<Expression> exs = types.stream()
+                .map(t -> genExpression(t))
+                .map(e -> e.sample())
+                .collect(Collectors.toList());
+        
+        NodeList<Expression> nodes = new NodeList<>(exs);
+        
+        return Arbitraries.just(nodes);
     }
     
     // Generating primitive types
@@ -174,21 +194,20 @@ public class MainTests {
     
     @Provide
     Arbitrary<ObjectCreationExpr> genObjectCreation(ClassOrInterfaceType t) throws ClassNotFoundException {
-        List<String> fields = this.ct.getClassFieldTypes(t.getNameAsString());    
-        
-        List<Type> types = fields.stream()
-                .map(ReflectParserTranslator::reflectToParserType)
-                .collect(Collectors.toList());
+        List<Constructor> constrs = this.ct.getClassConstructors(t.getNameAsString());
+        Arbitrary<Constructor> c = Arbitraries.of(constrs);
 
+        // @TODO: fix it later -- avoid the use of sample()
+        Constructor ex = c.sample();
+        
+        Class[] params = ex.getParameterTypes();
+        List<Class> ps = Arrays.asList(params);
+        
+        List<Type> types = ps.stream()
+                .map((tname) -> ReflectParserTranslator.reflectToParserType(tname.getName()))
+                .collect(Collectors.toList());
+        
         return genExpressionList(types).map(el -> new ObjectCreationExpr(null, t, el));
-        
-        // 1 - Olhar os construtores e ver o tipo dos parâmetros
-        // 2 - Traduzir os tipos da Reflect para Parser
-        // 3 - Gerar a lista de parâmetros
-        // 4 - Gerar o object creation
-        
-        // new <Nome Classe>( <Lista Parametros> )
-        
     }
     
     @Provide
@@ -196,8 +215,6 @@ public class MainTests {
         Arbitrary<Expression> e = genExpression(t);
         
         return e.map(obj -> new FieldAccessExpr(obj, f));
-        
-        // <expressao> . <campo>
     }
     
     @Provide

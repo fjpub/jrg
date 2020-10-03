@@ -27,7 +27,7 @@ public class ClassTable {
     public ClassTable(List<String> imports) {
         this.imports = imports;
         
-        System.out.println("Imports: " + this.imports.toString());
+        //System.out.println("Imports: " + this.imports.toString());
     }
     
     public List<String> getTypes() throws ClassNotFoundException {
