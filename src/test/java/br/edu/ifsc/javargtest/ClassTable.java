@@ -40,6 +40,20 @@ public class ClassTable {
         return list;
     }
     
+    public List<Field> getCandidateFields(String type) throws ClassNotFoundException {
+        List<Field> candidates = new ArrayList<>();
+        
+        for (String c : this.imports) {
+            List<Field> flds = getClassFields(c);
+            
+            flds.stream().filter(f -> f.getType().toString().equals(type));
+            
+            candidates.addAll(flds);
+        }
+        
+        return candidates;
+    }
+    
     public List<Field> getClassFields(String cname) throws ClassNotFoundException {
         List<Field> list = new ArrayList<>();
         
