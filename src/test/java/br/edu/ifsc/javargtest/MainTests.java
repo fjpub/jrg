@@ -14,12 +14,14 @@ import com.github.javaparser.printer.DotPrinter;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import static javassist.util.proxy.FactoryHelper.primitiveTypes;
 import net.jqwik.api.*;
 import org.junit.Test;
+import static org.junit.internal.MethodSorter.getDeclaredMethods;
 
 /**
  *
@@ -102,7 +104,7 @@ public class MainTests {
         return true;
     }
     
-    @Property 
+    @Test 
     boolean checkGenObjectCreation() throws ClassNotFoundException {
         ClassOrInterfaceType c = new ClassOrInterfaceType();
         c.setName("br.edu.ifsc.javargexamples.A");
@@ -114,8 +116,19 @@ public class MainTests {
         return true;
     }
     
-    // Generation methods
+    @Property 
+    boolean checkGenMethodInvokation() throws ClassNotFoundException {
+        ClassOrInterfaceType c = new ClassOrInterfaceType();
+        c.setName("br.edu.ifsc.javargexamples.B");
+        
+        Arbitrary<MethodCallExpr> e = genMethodInvokation(c,"getB");
+        
+        System.out.println("Method gerado: " + e.sample().toString());
+        
+        return true;
+    }
     
+    // Generation methods
     @Provide
     Arbitrary<PrimitiveType.Primitive> primitiveTypes() {
         return Arbitraries.of(PrimitiveType.Primitive.values());
@@ -218,14 +231,31 @@ public class MainTests {
     }
     
     @Provide
-    Arbitrary<MethodCallExpr> genMethodInvokation(ClassOrInterfaceType t, String m) {
-        MethodCallExpr e = new MethodCallExpr();
+    Arbitrary<MethodCallExpr> genMethodInvokation(ClassOrInterfaceType t, String m) throws ClassNotFoundException {
+       // Arbitrary<ObjectCreationExpr> oi = new Arbiraries.of();
+        // TODOS O METODOS
         
-        // invocação de método
+        List<Method> method = this.ct.getClassMethods(t.getNameAsString());          
         
-        return Arbitraries.just(e);
+        List<Method> ms = method.stream() 
+              .filter(meth -> meth.getName().equals(m)).collect(Collectors.toList());
+       
+        Arbitrary<Method> me= Arbitraries.of(ms);
+       
+        Method ex = me.sample();        
         
-        // <expressao> . <nome_metodo> ( <lista_parametros> )
+        Class[] params = ex.getParameterTypes();
+        
+        List<Class> ps = Arrays.asList(params);        
+        
+        List<Type> types = ps.stream()
+                .map((tname) -> ReflectParserTranslator.reflectToParserType(tname.getName()))
+                .collect(Collectors.toList());       
+        
+        Arbitrary<Expression> e = genExpression(t);     
+        
+        return genExpressionList(types).map(el -> new  MethodCallExpr(e.sample(),m,el));
+        
     }
     
 }
