@@ -46,14 +46,38 @@ public class ClassTable {
         for (String c : this.imports) {
             List<Field> flds = getClassFields(c);
             
-            flds.stream().filter(f -> f.getType().toString().equals(type));
+            List<Field> collect = flds.stream().filter(f -> f.getType().toString().equals(type)).collect(Collectors.toList());
             
-            candidates.addAll(flds);
+            candidates.addAll(collect);
         }
         
         return candidates;
     }
     
+    public List<Method> getCandidateMethods(String type) throws ClassNotFoundException{
+        List<Method> candidatesMethod = new ArrayList<>();
+    
+        for(String c : this.imports){
+            List<Method> mthd = getClassMethods(c);
+            
+            List<Method> collect = mthd.stream().filter(m -> m.getReturnType().toString().equals(type)).collect(Collectors.toList());
+            
+            candidatesMethod.addAll(collect);
+        }
+        return candidatesMethod;
+    }
+    
+    
+     public List<Constructor> getCandidateConstructors(String type) throws ClassNotFoundException{
+        List<Constructor> candidatesConstructor = new ArrayList<>();
+        
+        List<Constructor> cntc = getClassConstructors(type);
+          
+        candidatesConstructor.addAll(cntc);
+        
+        return candidatesConstructor;
+    }
+     
     public List<Field> getClassFields(String cname) throws ClassNotFoundException {
         List<Field> list = new ArrayList<>();
         

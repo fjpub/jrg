@@ -16,6 +16,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import static javassist.util.proxy.FactoryHelper.primitiveTypes;
@@ -104,7 +106,7 @@ public class MainTests {
         return true;
     }
     
-    @Test 
+    @Example 
     boolean checkGenObjectCreation() throws ClassNotFoundException {
         ClassOrInterfaceType c = new ClassOrInterfaceType();
         c.setName("br.edu.ifsc.javargexamples.A");
@@ -116,18 +118,53 @@ public class MainTests {
         return true;
     }
     
-    @Property 
+    @Property
     boolean checkGenMethodInvokation() throws ClassNotFoundException {
         ClassOrInterfaceType c = new ClassOrInterfaceType();
-        c.setName("br.edu.ifsc.javargexamples.B");
+        c.setName("br.edu.ifsc.javargexamples.A");
         
-        Arbitrary<MethodCallExpr> e = genMethodInvokation(c,"getB");
-        
+        Arbitrary<MethodCallExpr> e = genMethodInvokation(c ,"getA");
+
         System.out.println("Method gerado: " + e.sample().toString());
-        
+
         return true;
     }
     
+    @Example
+    boolean checkGenCandidatesMethods() throws ClassNotFoundException{
+        
+        List<Method> b = genCandidatesMethods("int");
+        System.out.println("Candidatos Methods: " + b);
+        
+        return true;
+    } 
+    
+    @Example
+    boolean checkGenCandidatesFields() throws ClassNotFoundException{
+        
+        Arbitrary<Field> b = genCandidatesField("int");
+        System.out.println("Candidatos Fields: " + b.sample());
+        
+        return true;
+    } 
+    
+    @Example
+    boolean checkGenCandidatesConstructors() throws ClassNotFoundException{
+        
+        List<Constructor> b = genCandidatesConstructors("br.edu.ifsc.javargexamples.C");
+        System.out.println("Candidatos Constructors: " + b);
+        
+        return true;
+    } 
+    
+    @Example
+    boolean checkGenExpression(){
+        Arbitrary<Expression> e = genExpression(ReflectParserTranslator.reflectToParserType("int"));
+        
+        System.out.println("Expressão gerada: " + e.sample());
+        
+        return true;
+    }
     // Generation methods
     @Provide
     Arbitrary<PrimitiveType.Primitive> primitiveTypes() {
@@ -151,7 +188,15 @@ public class MainTests {
     
     @Provide
     Arbitrary<Expression> genExpression(Type t) {
-        return Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType()));
+        try {
+                   
+            return Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType()),
+                    genAttributeAccess(t));
+        } catch (ClassNotFoundException ex) {
+       
+            System.out.println("Erro: " + ex.getMessage());
+        }
+        return null;
     }
     
     
@@ -224,38 +269,68 @@ public class MainTests {
     }
     
     @Provide
-    Arbitrary<FieldAccessExpr> genAttributeAccess(ClassOrInterfaceType t, String f) {
-        Arbitrary<Expression> e = genExpression(t);
+    Arbitrary<FieldAccessExpr> genAttributeAccess(Type t) throws ClassNotFoundException {
+        Arbitrary<Field> f = genCandidatesField(t.asString());
         
-        return e.map(obj -> new FieldAccessExpr(obj, f));
+        Field field = f.sample();
+        
+        Arbitrary<Expression> e = genExpression(ReflectParserTranslator.reflectToParserType(field.getDeclaringClass().toString()));
+        
+        
+        return e.map(obj -> new FieldAccessExpr(obj, field.getName()));
     }
     
-    @Provide
+     @Provide
     Arbitrary<MethodCallExpr> genMethodInvokation(ClassOrInterfaceType t, String m) throws ClassNotFoundException {
-       // Arbitrary<ObjectCreationExpr> oi = new Arbiraries.of();
-        // TODOS O METODOS
-        
-        List<Method> method = this.ct.getClassMethods(t.getNameAsString());          
-        
-        List<Method> ms = method.stream() 
-              .filter(meth -> meth.getName().equals(m)).collect(Collectors.toList());
-       
+
+        List<Method> method = this.ct.getClassMethods(t.getNameAsString());
+
+        List<Method> ms = method.stream()
+        .filter(meth -> meth.getName().equals(m)).collect(Collectors.toList());
+
         Arbitrary<Method> me= Arbitraries.of(ms);
-       
-        Method ex = me.sample();        
-        
+
+        Method ex = me.sample();
+
         Class[] params = ex.getParameterTypes();
-        
-        List<Class> ps = Arrays.asList(params);        
-        
+
+        List<Class> ps = Arrays.asList(params);
+
         List<Type> types = ps.stream()
-                .map((tname) -> ReflectParserTranslator.reflectToParserType(tname.getName()))
-                .collect(Collectors.toList());       
+        .map((tname) -> ReflectParserTranslator.reflectToParserType(tname.getName()))
+        .collect(Collectors.toList());
         
-        Arbitrary<Expression> e = genExpression(t);     
-        
+        // erro nesta expressão 
+        Arbitrary<Expression> e = genExpression(t);
+
         return genExpressionList(types).map(el -> new  MethodCallExpr(e.sample(),m,el));
-        
+    
     }
     
+    @Provide 
+   List<Method> genCandidatesMethods(String type) throws ClassNotFoundException{
+        List<Method> candidatesMethods ;
+       
+        candidatesMethods = this.ct.getCandidateMethods(type);
+     
+        return candidatesMethods;
+    }
+    
+   @Provide 
+   Arbitrary<Field> genCandidatesField(String type) throws ClassNotFoundException{
+        List<Field> candidatesField;
+       
+        candidatesField = this.ct.getCandidateFields(type);
+     
+        return Arbitraries.of(candidatesField);
+    }
+   
+   @Provide 
+   List<Constructor> genCandidatesConstructors(String type) throws ClassNotFoundException{
+        List<Constructor> candidatesConstructors ;
+       
+        candidatesConstructors = this.ct.getCandidateConstructors(type);
+        
+        return candidatesConstructors;
+    }
 }

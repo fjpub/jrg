@@ -14,9 +14,7 @@ public class C {
     public A aInC;
     public B bInC;
     
-    public C() {
-        
-    }
+    
     
     public void setA(A a) {
         this.aInC = a;
