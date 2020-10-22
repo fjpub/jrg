@@ -70,7 +70,7 @@ public class MainTests {
     
     // Properties to be tested
     
-    @Property
+    //@Property
     boolean checkPrimitiveType(
         @ForAll("primitiveTypes") PrimitiveType.Primitive t
     ) {
@@ -78,7 +78,7 @@ public class MainTests {
         return true;
     }
     
-    @Property
+    //@Property
     boolean checkClassOrInterfaceType(
         @ForAll("classOrInterfaceTypes") ClassOrInterfaceType t
     ) {
@@ -86,7 +86,7 @@ public class MainTests {
         return true;
     }
     
-    @Example
+    //@Example
     boolean checkGenPrimitiveType(){
         Arbitrary<PrimitiveType.Primitive> t = primitiveTypes();
         Arbitrary<LiteralExpr> e = t.flatMap(tp -> genPrimitiveType(new PrimitiveType(tp)));
@@ -96,7 +96,7 @@ public class MainTests {
         return true;        
     }
     
-    @Example
+    //@Example
     boolean checkGenPrimitiveString(){
         
         Arbitrary<LiteralExpr> s = genPrimitiveString();
@@ -109,16 +109,26 @@ public class MainTests {
     @Example 
     boolean checkGenObjectCreation() throws ClassNotFoundException {
         ClassOrInterfaceType c = new ClassOrInterfaceType();
-        //c.setName("br.edu.ifsc.javargexamples.A");
-        c.setName("int");
+        c.setName("br.edu.ifsc.javargexamples.C");
+        //c.setName("int");
+        
+        System.out.println("checkGenObjectCreation::inicio");
+        
         Arbitrary<ObjectCreationExpr> e = genObjectCreation(c);
         
-        System.out.println("ObjectCreation gerado: " + e.sample().toString());
+        if (e != null) {
+            System.out.println("ObjectCreation gerado: " + e.sample().toString());
+        }
+        else {
+            System.out.println("Não foi possível gerar criação de objeto.");
+        }
+        
+        System.out.println("checkGenObjectCreation::fim");
         
         return true;
     }
     
-    @Property
+    //@Property
     boolean checkGenMethodInvokation() throws ClassNotFoundException {
         ClassOrInterfaceType c = new ClassOrInterfaceType();
         c.setName("br.edu.ifsc.javargexamples.A");
@@ -130,7 +140,7 @@ public class MainTests {
         return true;
     }
     
-    @Example
+    //@Example
     boolean checkGenCandidatesMethods() throws ClassNotFoundException{
         
         Arbitrary<Method> b = genCandidatesMethods("int");
@@ -139,7 +149,7 @@ public class MainTests {
         return true;
     } 
     
-    @Example
+    //@Example
     boolean checkGenCandidatesFields() throws ClassNotFoundException{
         
         Arbitrary<Field> b = genCandidatesField("int");
@@ -148,7 +158,7 @@ public class MainTests {
         return true;
     } 
     
-    @Example
+    //@Example
     boolean checkGenCandidatesConstructors() throws ClassNotFoundException{
         
         Arbitrary<Constructor> b = genCandidatesConstructors("br.edu.ifsc.javargexamples.C");
@@ -157,7 +167,7 @@ public class MainTests {
         return true;
     } 
     
-    @Example
+    //@Example
     boolean checkGenExpression(){
         Arbitrary<Expression> e = genExpression(ReflectParserTranslator.reflectToParserType("int"));
         
@@ -188,27 +198,45 @@ public class MainTests {
     
     @Provide
     Arbitrary<Expression> genExpression(Type t) {
+        Arbitrary<Expression> e;
+        System.out.println("genExpression::inicio");
+        
+        System.out.println("genExpression::t = " + t);
+        
+        List<Arbitrary<Expression>> cand = new ArrayList<>();
+        
         try {
-            Arbitrary<Expression> e = Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType()),
-                    genAttributeAccess(t),genMethodInvokation(t), genObjectCreation(t));
-            if(e != null){
-                System.out.println("******genExpression:  "+ e.sample());
-                 return e;
-            }else{
-                System.out.println("******genExpression: Valor nulo ");
-                return null;
+        
+            // Verifica se existem atributos candidatos
+            if (!this.ct.getCandidateFields(t.asString()).isEmpty()) {
+                cand.add(Arbitraries.oneOf(genAttributeAccess(t)));
             }
-            
+            // Fazer também para métodos
+
+            // Candidatos de tipos primitivos
+            if (t.isPrimitiveType()) {
+                cand.add(Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType())));
+            }
+
+            // Candidados de construtores
+            if (!t.isPrimitiveType()) {
+                cand.add(Arbitraries.oneOf(genObjectCreation(t)));
+            }
+        
         } catch (ClassNotFoundException ex) {
-       
-            System.out.println("Erro: " + ex.getMessage());
+            System.out.println("genExpression::ClassNotFoundException");
         }
-        return null;
+        
+        System.out.println("genExpression::fim");
+        
+        return Arbitraries.oneOf(cand);
     }
     
     
     @Provide
     Arbitrary<NodeList<Expression>> genExpressionList(List<Type> types) {
+        
+        System.out.println("genExpressionList::inicio");
         
         // @TODO: fix it later -- avoid the use of sample()
         List<Expression> exs = types.stream()
@@ -217,6 +245,8 @@ public class MainTests {
                 .collect(Collectors.toList());
         
         NodeList<Expression> nodes = new NodeList<>(exs);
+        
+        System.out.println("genExpressionList::fim");
         
         return Arbitraries.just(nodes);
     }
@@ -258,19 +288,42 @@ public class MainTests {
     // Generating expressions
     
     @Provide
-    Arbitrary<ObjectCreationExpr> genObjectCreation(Type t) throws ClassNotFoundException {
-        List<Constructor> constrs = this.ct.getClassConstructors(t.asString());
+    Arbitrary<ObjectCreationExpr> genObjectCreation(Type t) {
+        List<Constructor> constrs;
+
+        System.out.println("genObjectCreation::inicio");
+        
+        try {
+             constrs = this.ct.getClassConstructors(t.asString());
+        }
+        catch (ClassNotFoundException e) {
+            System.out.println("genObjectCreation::Classe inválida [" + t.asString() + "]");
+            return null;
+        }
+        
+        
         Arbitrary<Constructor> c = Arbitraries.of(constrs);
 
         // @TODO: fix it later -- avoid the use of sample()
         Constructor ex = c.sample();
         
+        System.out.println("genObjectCreation::ex = " + ex.toString());
+        
         Class[] params = ex.getParameterTypes();
+        
+        System.out.println("genObjectCreation::params = " + params);
+        
         List<Class> ps = Arrays.asList(params);
+        
+        System.out.println("genObjectCreation::ps = " + ps);
         
         List<Type> types = ps.stream()
                 .map((tname) -> ReflectParserTranslator.reflectToParserType(tname.getName()))
                 .collect(Collectors.toList());
+        
+        System.out.println("genObjectCreation::types = " + types);
+        
+        System.out.println("genObjectCreation::fim");
         
         return genExpressionList(types).map(el -> new ObjectCreationExpr(null, t.asClassOrInterfaceType(), el));
     }

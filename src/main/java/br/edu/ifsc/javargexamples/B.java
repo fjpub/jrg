@@ -17,6 +17,10 @@ public class B {
         
     }
     
+    public B(int b) {
+        this.b = b;
+    }
+    
     public void setB(int b) {
         this.b = b;
     }

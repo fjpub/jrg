@@ -5,6 +5,7 @@
  */
 package br.edu.ifsc.javargtest;
 
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
 
@@ -15,27 +16,29 @@ import com.github.javaparser.ast.type.Type;
 public class ReflectParserTranslator {
     
     public static Type reflectToParserType(String tname) {
-        Type t = null;
         
-        if(tname.equals("int")){
-             t = PrimitiveType.intType();
-        }else if(tname.equals("float")){
-             t = PrimitiveType.floatType();
-        }else if(tname.equals("double")){
-             t = PrimitiveType.doubleType();
-        }else if(tname.equals("boolean")){
-             t = PrimitiveType.booleanType();
-        }else if(tname.equals("char")){
-             t = PrimitiveType.charType();
-        }else if(tname.equals("long")){
-             t = PrimitiveType.longType();
-        }else if(tname.equals("byte")){
-             t = PrimitiveType.byteType();
-        }else if(tname.equals("short")){
-             t = PrimitiveType.shortType();
+        switch (tname) {
+            case "int":
+                return PrimitiveType.intType();
+            case "float":
+                return PrimitiveType.floatType();
+            case "double":
+                return PrimitiveType.doubleType();
+            case "boolean":
+                return PrimitiveType.booleanType();
+            case "char":
+                return PrimitiveType.charType();
+            case "long":
+                return PrimitiveType.longType();
+            case "byte":
+                return PrimitiveType.byteType();
+            case "short":
+                return PrimitiveType.shortType();
+            default:
+                break;
         }
       
-        return t;
+        return new ClassOrInterfaceType(null, tname);
     }
     
 }
