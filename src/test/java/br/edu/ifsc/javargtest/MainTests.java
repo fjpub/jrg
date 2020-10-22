@@ -109,8 +109,8 @@ public class MainTests {
     @Example 
     boolean checkGenObjectCreation() throws ClassNotFoundException {
         ClassOrInterfaceType c = new ClassOrInterfaceType();
-        c.setName("br.edu.ifsc.javargexamples.A");
-        
+        //c.setName("br.edu.ifsc.javargexamples.A");
+        c.setName("int");
         Arbitrary<ObjectCreationExpr> e = genObjectCreation(c);
         
         System.out.println("ObjectCreation gerado: " + e.sample().toString());
@@ -123,7 +123,7 @@ public class MainTests {
         ClassOrInterfaceType c = new ClassOrInterfaceType();
         c.setName("br.edu.ifsc.javargexamples.A");
         
-        Arbitrary<MethodCallExpr> e = genMethodInvokation(c ,"getA");
+        Arbitrary<MethodCallExpr> e = genMethodInvokation(PrimitiveType.intType());
 
         System.out.println("Method gerado: " + e.sample().toString());
 
@@ -133,8 +133,8 @@ public class MainTests {
     @Example
     boolean checkGenCandidatesMethods() throws ClassNotFoundException{
         
-        List<Method> b = genCandidatesMethods("int");
-        System.out.println("Candidatos Methods: " + b);
+        Arbitrary<Method> b = genCandidatesMethods("int");
+        System.out.println("Candidatos Methods: " + b.sample());
         
         return true;
     } 
@@ -151,8 +151,8 @@ public class MainTests {
     @Example
     boolean checkGenCandidatesConstructors() throws ClassNotFoundException{
         
-        List<Constructor> b = genCandidatesConstructors("br.edu.ifsc.javargexamples.C");
-        System.out.println("Candidatos Constructors: " + b);
+        Arbitrary<Constructor> b = genCandidatesConstructors("br.edu.ifsc.javargexamples.C");
+        System.out.println("Candidatos Constructors: " + b.sample());
         
         return true;
     } 
@@ -189,9 +189,16 @@ public class MainTests {
     @Provide
     Arbitrary<Expression> genExpression(Type t) {
         try {
-                   
-            return Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType()),
-                    genAttributeAccess(t));
+            Arbitrary<Expression> e = Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType()),
+                    genAttributeAccess(t),genMethodInvokation(t), genObjectCreation(t));
+            if(e != null){
+                System.out.println("******genExpression:  "+ e.sample());
+                 return e;
+            }else{
+                System.out.println("******genExpression: Valor nulo ");
+                return null;
+            }
+            
         } catch (ClassNotFoundException ex) {
        
             System.out.println("Erro: " + ex.getMessage());
@@ -251,8 +258,8 @@ public class MainTests {
     // Generating expressions
     
     @Provide
-    Arbitrary<ObjectCreationExpr> genObjectCreation(ClassOrInterfaceType t) throws ClassNotFoundException {
-        List<Constructor> constrs = this.ct.getClassConstructors(t.getNameAsString());
+    Arbitrary<ObjectCreationExpr> genObjectCreation(Type t) throws ClassNotFoundException {
+        List<Constructor> constrs = this.ct.getClassConstructors(t.asString());
         Arbitrary<Constructor> c = Arbitraries.of(constrs);
 
         // @TODO: fix it later -- avoid the use of sample()
@@ -265,7 +272,7 @@ public class MainTests {
                 .map((tname) -> ReflectParserTranslator.reflectToParserType(tname.getName()))
                 .collect(Collectors.toList());
         
-        return genExpressionList(types).map(el -> new ObjectCreationExpr(null, t, el));
+        return genExpressionList(types).map(el -> new ObjectCreationExpr(null, t.asClassOrInterfaceType(), el));
     }
     
     @Provide
@@ -274,46 +281,35 @@ public class MainTests {
         
         Field field = f.sample();
         
-        Arbitrary<Expression> e = genExpression(ReflectParserTranslator.reflectToParserType(field.getDeclaringClass().toString()));
+        Arbitrary<Expression> e = genExpression(ReflectParserTranslator
+                .reflectToParserType(field.getDeclaringClass().toString()));
         
         
         return e.map(obj -> new FieldAccessExpr(obj, field.getName()));
     }
     
-     @Provide
-    Arbitrary<MethodCallExpr> genMethodInvokation(ClassOrInterfaceType t, String m) throws ClassNotFoundException {
+    @Provide
+    Arbitrary<MethodCallExpr> genMethodInvokation(Type t) throws ClassNotFoundException {
 
-        List<Method> method = this.ct.getClassMethods(t.getNameAsString());
+        Arbitrary<Method> m =  genCandidatesMethods(t.asString());
 
-        List<Method> ms = method.stream()
-        .filter(meth -> meth.getName().equals(m)).collect(Collectors.toList());
+        Method method = m.sample();
 
-        Arbitrary<Method> me= Arbitraries.of(ms);
-
-        Method ex = me.sample();
-
-        Class[] params = ex.getParameterTypes();
-
-        List<Class> ps = Arrays.asList(params);
-
-        List<Type> types = ps.stream()
-        .map((tname) -> ReflectParserTranslator.reflectToParserType(tname.getName()))
-        .collect(Collectors.toList());
+        Arbitrary<Expression> e = genExpression(ReflectParserTranslator
+                .reflectToParserType(method.getDeclaringClass().toString()));
         
-        // erro nesta expressão 
-        Arbitrary<Expression> e = genExpression(t);
 
-        return genExpressionList(types).map(el -> new  MethodCallExpr(e.sample(),m,el));
-    
+       // return genExpressionList().map(el -> new  MethodCallExpr(e.sample(),m,el));
+       return e.map(obj -> new MethodCallExpr(obj, method.getName()));
     }
     
     @Provide 
-   List<Method> genCandidatesMethods(String type) throws ClassNotFoundException{
+   Arbitrary<Method> genCandidatesMethods(String type) throws ClassNotFoundException{
         List<Method> candidatesMethods ;
        
         candidatesMethods = this.ct.getCandidateMethods(type);
      
-        return candidatesMethods;
+        return Arbitraries.of(candidatesMethods);
     }
     
    @Provide 
@@ -326,11 +322,11 @@ public class MainTests {
     }
    
    @Provide 
-   List<Constructor> genCandidatesConstructors(String type) throws ClassNotFoundException{
+   Arbitrary<Constructor> genCandidatesConstructors(String type) throws ClassNotFoundException{
         List<Constructor> candidatesConstructors ;
        
         candidatesConstructors = this.ct.getCandidateConstructors(type);
         
-        return candidatesConstructors;
+        return Arbitraries.of(candidatesConstructors);
     }
 }
