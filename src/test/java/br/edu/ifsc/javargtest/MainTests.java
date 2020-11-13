@@ -40,6 +40,8 @@ public class MainTests {
         this.skeleton = StaticJavaParser.parse(new File(SKELETON_PATH)); 
         this.ct = new ClassTable(loadImports());
         
+        JRGLog.logLevel = JRGLog.Severity.MSG_XDEBUG;
+        
         //System.out.println(this.skeleton.toString());
         //dumpAST();
     }
@@ -106,13 +108,12 @@ public class MainTests {
         return true;
     }
     
-    @Example 
+    @Example
     boolean checkGenObjectCreation() throws ClassNotFoundException {
         ClassOrInterfaceType c = new ClassOrInterfaceType();
         c.setName("br.edu.ifsc.javargexamples.C");
-        //c.setName("int");
         
-        System.out.println("checkGenObjectCreation::inicio");
+        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "checkGenObjectCreation::inicio");
         
         Arbitrary<ObjectCreationExpr> e = genObjectCreation(c);
         
@@ -203,28 +204,31 @@ public class MainTests {
         
         System.out.println("genExpression::t = " + t);
         
-        List<Arbitrary<Expression>> cand = new ArrayList<>();
+        List<Arbitrary<Expression>> cand = new ArrayList<>();        
         
         try {
-        
-            // Verifica se existem atributos candidatos
-            if (!this.ct.getCandidateFields(t.asString()).isEmpty()) {
-                cand.add(Arbitraries.oneOf(genAttributeAccess(t)));
-            }
-            // Fazer também para métodos
-
             // Candidatos de tipos primitivos
             if (t.isPrimitiveType()) {
                 cand.add(Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType())));
             }
-
-            // Candidados de construtores
+            
+            // Se não for tipo primitivo
             if (!t.isPrimitiveType()) {
+                
+                // Candidatos de construtores
                 cand.add(Arbitraries.oneOf(genObjectCreation(t)));
+                
+                // Verifica se existem atributos candidatos
+                if (!this.ct.getCandidateFields(t.asString()).isEmpty()) {
+                    cand.add(Arbitraries.oneOf(genAttributeAccess(t)));
+                }
+                
+                // Fazer também para métodos
+                // @TODO
             }
         
-        } catch (ClassNotFoundException ex) {
-            System.out.println("genExpression::ClassNotFoundException");
+        } catch (Exception ex) {
+            System.out.println("genExpression::Exception: " + ex.getMessage());
         }
         
         System.out.println("genExpression::fim");
@@ -292,12 +296,12 @@ public class MainTests {
         List<Constructor> constrs;
 
         System.out.println("genObjectCreation::inicio");
-        
+        System.out.println("genObjectCreation::t = " + t.asString());
         try {
              constrs = this.ct.getClassConstructors(t.asString());
         }
         catch (ClassNotFoundException e) {
-            System.out.println("genObjectCreation::Classe inválida [" + t.asString() + "]");
+            System.out.println("genObjectCreation::Classe inválida [" + t.asString() + "] = " + e.getMessage());
             return null;
         }
         
@@ -305,13 +309,11 @@ public class MainTests {
         Arbitrary<Constructor> c = Arbitraries.of(constrs);
 
         // @TODO: fix it later -- avoid the use of sample()
-        Constructor ex = c.sample();
+        Constructor constr = c.sample();
         
-        System.out.println("genObjectCreation::ex = " + ex.toString());
+        System.out.println("genObjectCreation::constr = " + constr.toString());
         
-        Class[] params = ex.getParameterTypes();
-        
-        System.out.println("genObjectCreation::params = " + params);
+        Class[] params = constr.getParameterTypes();
         
         List<Class> ps = Arrays.asList(params);
         
@@ -332,11 +334,15 @@ public class MainTests {
     Arbitrary<FieldAccessExpr> genAttributeAccess(Type t) throws ClassNotFoundException {
         Arbitrary<Field> f = genCandidatesField(t.asString());
         
+        System.out.println("genAttributeAccess::inicio");
+        
         Field field = f.sample();
         
         Arbitrary<Expression> e = genExpression(ReflectParserTranslator
                 .reflectToParserType(field.getDeclaringClass().toString()));
         
+        
+        System.out.println("genAttributeAccess::fim");
         
         return e.map(obj -> new FieldAccessExpr(obj, field.getName()));
     }
