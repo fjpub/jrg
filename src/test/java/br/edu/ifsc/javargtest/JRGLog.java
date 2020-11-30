@@ -25,6 +25,7 @@ public class JRGLog {
         if (logLevel.ordinal() >= s.ordinal()) {
             System.out.println(msg);
         }
+        
     }
     
 }

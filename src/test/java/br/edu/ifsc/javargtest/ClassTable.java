@@ -26,8 +26,7 @@ public class ClassTable {
     
     public ClassTable(List<String> imports) {
         this.imports = imports;
-        
-        //System.out.println("Imports: " + this.imports.toString());
+       
     }
     
     public List<String> getTypes() throws ClassNotFoundException {
@@ -40,13 +39,16 @@ public class ClassTable {
         return list;
     }
     
-    public List<Field> getCandidateFields(String type) throws ClassNotFoundException {
+    public List<Field> getCandidateFields(String type) 
+            throws ClassNotFoundException {
         List<Field> candidates = new ArrayList<>();
         
         for (String c : this.imports) {
             List<Field> flds = getClassFields(c);
             
-            List<Field> collect = flds.stream().filter(f -> f.getType().toString().equals(type)).collect(Collectors.toList());
+            List<Field> collect = flds.stream().filter(
+                    f -> f.getType().toString().equals(type))
+                    .collect(Collectors.toList());
             
             candidates.addAll(collect);
         }
@@ -54,21 +56,26 @@ public class ClassTable {
         return candidates;
     }
     
-    public List<Method> getCandidateMethods(String type) throws ClassNotFoundException{
+    public List<Method> getCandidateMethods(String type) 
+            throws ClassNotFoundException {
         List<Method> candidatesMethod = new ArrayList<>();
     
         for(String c : this.imports){
             List<Method> mthd = getClassMethods(c);
             
-            List<Method> collect = mthd.stream().filter(m -> m.getReturnType().toString().equals(type)).collect(Collectors.toList());
+            List<Method> collect = mthd.stream().filter(
+                    m -> m.getReturnType().toString().equals(type))
+                    .collect(Collectors.toList());
             
             candidatesMethod.addAll(collect);
         }
+        
         return candidatesMethod;
     }
     
     
-     public List<Constructor> getCandidateConstructors(String type) throws ClassNotFoundException{
+     public List<Constructor> getCandidateConstructors(String type) 
+             throws ClassNotFoundException {
         List<Constructor> candidatesConstructor = new ArrayList<>();
         
         List<Constructor> cntc = getClassConstructors(type);
@@ -78,7 +85,8 @@ public class ClassTable {
         return candidatesConstructor;
     }
      
-    public List<Field> getClassFields(String cname) throws ClassNotFoundException {
+    public List<Field> getClassFields(String cname) 
+            throws ClassNotFoundException {
         List<Field> list = new ArrayList<>();
         
         Class c = Class.forName(cname);
@@ -90,7 +98,8 @@ public class ClassTable {
         return list;
     }
     
-    public List<String> getClassFieldTypes(String cname) throws ClassNotFoundException {
+    public List<String> getClassFieldTypes(String cname) 
+            throws ClassNotFoundException {
         List<String> list = getClassFields(cname).stream()
                 .map(f -> f.getGenericType().getTypeName())
                 .collect(Collectors.toList());
@@ -99,7 +108,8 @@ public class ClassTable {
     }
     
 
-   public List<Method> getClassMethods(String cname) throws ClassNotFoundException{
+   public List<Method> getClassMethods(String cname) 
+           throws ClassNotFoundException {
         List<Method> list = new ArrayList<>();
 
         Class c = Class.forName(cname);
@@ -111,8 +121,9 @@ public class ClassTable {
         return list;
     }
     
-    // Fazer o mesmo para os construtores 
-   public List<Constructor> getClassConstructors(String cname) throws ClassNotFoundException{
+    
+   public List<Constructor> getClassConstructors(String cname) 
+           throws ClassNotFoundException {
        List<Constructor> list = new ArrayList<>();
        
        Class c = Class.forName(cname);

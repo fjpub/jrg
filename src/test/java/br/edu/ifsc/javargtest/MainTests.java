@@ -1,29 +1,19 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package br.edu.ifsc.javargtest;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.type.*;
-import com.github.javaparser.ast.type.PrimitiveType.Primitive;
 import com.github.javaparser.printer.DotPrinter;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import static javassist.util.proxy.FactoryHelper.primitiveTypes;
 import net.jqwik.api.*;
-import org.junit.Test;
-import static org.junit.internal.MethodSorter.getDeclaredMethods;
+import br.edu.ifsc.javargtest.JRGLog.Severity;
 
 /**
  *
@@ -33,30 +23,33 @@ public class MainTests {
     
     private static final String SKELETON_PATH = 
         "src/main/java/br/edu/ifsc/javarg/MainClass.java";
+    
     private CompilationUnit skeleton;
+    
     private ClassTable ct;
     
     public MainTests() throws FileNotFoundException, IOException {
         this.skeleton = StaticJavaParser.parse(new File(SKELETON_PATH)); 
+    
         this.ct = new ClassTable(loadImports());
         
-        JRGLog.logLevel = JRGLog.Severity.MSG_XDEBUG;
-        
-        //System.out.println(this.skeleton.toString());
-        //dumpAST();
+        JRGLog.logLevel = Severity.MSG_XDEBUG;
+     
     }
     
-    // Auxiliary methods
-    
+    // Auxiliary methods    
     private List<String> loadImports() {
         NodeList<ImportDeclaration> imports = this.skeleton.getImports();
+        
         List<String> list = new ArrayList<>();
         
         Iterator<ImportDeclaration> it = imports.iterator();
         
         while (it.hasNext()) {
             ImportDeclaration i = it.next();
+        
             list.add(i.getName().asString());
+        
         }
         
         return list;
@@ -64,8 +57,11 @@ public class MainTests {
     
     private void dumpAST() throws IOException {
         DotPrinter printer = new DotPrinter(true);
+        
         try (FileWriter fileWriter = new FileWriter("ast.dot");
+        
             PrintWriter printWriter = new PrintWriter(fileWriter)) {
+            
             printWriter.print(printer.output(this.skeleton));
         }
     }
@@ -77,11 +73,12 @@ public class MainTests {
         @ForAll("primitiveTypes") PrimitiveType.Primitive t
     ) {
         System.out.println("Tipo primitivo gerado: " + t.asString());
+        
         return true;
     }
     
     //@Property
-    boolean checkClassOrInterfaceType(
+    boolean checkClassOrInterfaceType (
         @ForAll("classOrInterfaceTypes") ClassOrInterfaceType t
     ) {
         System.out.println("Classe gerada: " + t.asString());
@@ -89,18 +86,20 @@ public class MainTests {
     }
     
     //@Example
-    boolean checkGenPrimitiveType(){
+    boolean checkGenPrimitiveType() {
         Arbitrary<PrimitiveType.Primitive> t = primitiveTypes();
-        Arbitrary<LiteralExpr> e = t.flatMap(tp -> genPrimitiveType(new PrimitiveType(tp)));
         
-        System.out.println("Expressão gerada (tipo primitivo): " + e.sample().toString());
+        Arbitrary<LiteralExpr> e = t.flatMap(tp -> genPrimitiveType(
+                new PrimitiveType(tp)));
+        
+        System.out.println("Expressão gerada (tipo primitivo): " + 
+                e.sample().toString());
  
         return true;        
     }
     
     //@Example
-    boolean checkGenPrimitiveString(){
-        
+    boolean checkGenPrimitiveString() {        
         Arbitrary<LiteralExpr> s = genPrimitiveString();
         
         System.out.println("Frase gerada: " + s.sample());
@@ -108,74 +107,133 @@ public class MainTests {
         return true;
     }
     
-    @Example
+    //@Example
     boolean checkGenObjectCreation() throws ClassNotFoundException {
-        ClassOrInterfaceType c = new ClassOrInterfaceType();
-        c.setName("br.edu.ifsc.javargexamples.C");
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenObjectCreation"
+                + "::inicio");
         
-        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "checkGenObjectCreation::inicio");
+        ClassOrInterfaceType c = new ClassOrInterfaceType();
+        
+        c.setName("br.edu.ifsc.javargexamples.B");              
         
         Arbitrary<ObjectCreationExpr> e = genObjectCreation(c);
         
         if (e != null) {
-            System.out.println("ObjectCreation gerado: " + e.sample().toString());
+            System.out.println("ObjectCreation gerado: " + 
+                    e.sample().toString());
         }
         else {
-            System.out.println("Não foi possível gerar criação de objeto.");
+            JRGLog.showMessage(Severity.MSG_ERROR, "Não foi possível gerar "
+                    + "criação de objeto");
         }
         
-        System.out.println("checkGenObjectCreation::fim");
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenObjectCreation::fim");
         
         return true;
     }
     
-    //@Property
+    @Example
     boolean checkGenMethodInvokation() throws ClassNotFoundException {
-        ClassOrInterfaceType c = new ClassOrInterfaceType();
-        c.setName("br.edu.ifsc.javargexamples.A");
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenMethodInvokation"
+                + "::inicio");
         
-        Arbitrary<MethodCallExpr> e = genMethodInvokation(PrimitiveType.intType());
-
-        System.out.println("Method gerado: " + e.sample().toString());
-
+        ClassOrInterfaceType c = new ClassOrInterfaceType();
+        
+        c.setName("br.edu.ifsc.javargexamples.C");
+        
+        Arbitrary<MethodCallExpr> e = genMethodInvokation(c);
+        
+        if (e != null) {
+            System.out.println("Method gerado: " + e.sample().toString());
+            
+        }
+        else {
+            JRGLog.showMessage(Severity.MSG_ERROR, "Não foi possível gerar "
+                    + "criação do método");
+            
+        }
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenMethodInvokation"
+                + "::fim");
+        
         return true;
     }
     
     //@Example
-    boolean checkGenCandidatesMethods() throws ClassNotFoundException{
+    boolean checkGenCandidatesMethods() throws ClassNotFoundException {        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidatesMethods"
+                + "::inicio");
         
         Arbitrary<Method> b = genCandidatesMethods("int");
+        
         System.out.println("Candidatos Methods: " + b.sample());
         
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidatesMethods"
+                + "::fim");
+        
         return true;
     } 
     
     //@Example
-    boolean checkGenCandidatesFields() throws ClassNotFoundException{
+    boolean checkGenCandidatesFields() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidatesFields"
+                + "::inicio");
         
         Arbitrary<Field> b = genCandidatesField("int");
+        
         System.out.println("Candidatos Fields: " + b.sample());
         
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidatesFields:"
+                + ":fim");
+        
         return true;
     } 
     
     //@Example
-    boolean checkGenCandidatesConstructors() throws ClassNotFoundException{
+    boolean checkGenCandidatesConstructors() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidatesConstructors"
+                + "::inicio");
         
-        Arbitrary<Constructor> b = genCandidatesConstructors("br.edu.ifsc.javargexamples.C");
+        Arbitrary<Constructor> b = genCandidatesConstructors("br.edu.ifsc."
+                + "javargexamples.B");
+        
         System.out.println("Candidatos Constructors: " + b.sample());
         
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidatesConstructors"
+                + "::fim");
+        
         return true;
     } 
     
     //@Example
-    boolean checkGenExpression(){
-        Arbitrary<Expression> e = genExpression(ReflectParserTranslator.reflectToParserType("int"));
+    boolean checkGenExpression() {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenExpression::inicio");
+        
+        Arbitrary<Expression> e = genExpression(
+                ReflectParserTranslator.reflectToParserType("int"));
         
         System.out.println("Expressão gerada: " + e.sample());
         
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenExpression::fim");
+        
         return true;
     }
+    
+    //@Example
+    boolean checkGenAttributeAccess() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenAtributteAcess"
+                + "::inicio");
+        
+        Arbitrary<FieldAccessExpr> e = genAttributeAccess(
+                ReflectParserTranslator.reflectToParserType("int"));
+        
+        System.out.println("Acesso gerado: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenExpression::fim");
+        
+        return true;
+    }
+    
     // Generation methods
     @Provide
     Arbitrary<PrimitiveType.Primitive> primitiveTypes() {
@@ -183,7 +241,8 @@ public class MainTests {
     }
     
     @Provide
-    Arbitrary<ClassOrInterfaceType> classOrInterfaceTypes() throws ClassNotFoundException {
+    Arbitrary<ClassOrInterfaceType> classOrInterfaceTypes() 
+            throws ClassNotFoundException {
         List<ClassOrInterfaceType> list = new ArrayList<>();
         
         for (String s : this.ct.getTypes()) {
@@ -199,48 +258,53 @@ public class MainTests {
     
     @Provide
     Arbitrary<Expression> genExpression(Type t) {
-        Arbitrary<Expression> e;
-        System.out.println("genExpression::inicio");
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genExpression::inicio");
         
-        System.out.println("genExpression::t = " + t);
+        Arbitrary<Expression> e;
+        
+        System.out.println("genExpression::t = " + t.asString());
         
         List<Arbitrary<Expression>> cand = new ArrayList<>();        
         
         try {
             // Candidatos de tipos primitivos
             if (t.isPrimitiveType()) {
-                cand.add(Arbitraries.oneOf(genPrimitiveType(t.asPrimitiveType())));
-            }
-            
-            // Se não for tipo primitivo
-            if (!t.isPrimitiveType()) {
+                cand.add(Arbitraries.oneOf(genPrimitiveType(
+                        t.asPrimitiveType())));
                 
+            }           
+            // Se não for tipo primitivo
+            if (!t.isPrimitiveType()) {                 
                 // Candidatos de construtores
                 cand.add(Arbitraries.oneOf(genObjectCreation(t)));
                 
                 // Verifica se existem atributos candidatos
                 if (!this.ct.getCandidateFields(t.asString()).isEmpty()) {
                     cand.add(Arbitraries.oneOf(genAttributeAccess(t)));
+                    
                 }
                 
-                // Fazer também para métodos
-                // @TODO
+                // Verifica se existem canditados methods
+                if (!this.ct.getCandidateMethods(t.asString()).isEmpty()) {
+                    cand.add(Arbitraries.oneOf(genMethodInvokation(t)));
+                    
+                }
+                       
             }
-        
-        } catch (Exception ex) {
-            System.out.println("genExpression::Exception: " + ex.getMessage());
+        } 
+        catch (ClassNotFoundException ex) {
+            JRGLog.showMessage(Severity.MSG_ERROR, "genExpression");
         }
         
-        System.out.println("genExpression::fim");
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genExpression::fim");
         
         return Arbitraries.oneOf(cand);
     }
     
     
     @Provide
-    Arbitrary<NodeList<Expression>> genExpressionList(List<Type> types) {
-        
-        System.out.println("genExpressionList::inicio");
+    Arbitrary<NodeList<Expression>> genExpressionList(List<Type> types) {        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genExpressionList::inicio");
         
         // @TODO: fix it later -- avoid the use of sample()
         List<Expression> exs = types.stream()
@@ -250,34 +314,50 @@ public class MainTests {
         
         NodeList<Expression> nodes = new NodeList<>(exs);
         
-        System.out.println("genExpressionList::fim");
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genExpressionList::fim");
         
         return Arbitraries.just(nodes);
     }
     
-    // Generating primitive types
-    
+    // Generating primitive types    
     @Provide
     Arbitrary<LiteralExpr> genPrimitiveType(PrimitiveType t) {
         LiteralExpr e = null;
         
         switch (t.getType()) {
-            case BOOLEAN: 
-                return Arbitraries.of(true, false).map(b -> new BooleanLiteralExpr(b));
-            case CHAR:
-                return Arbitraries.chars().ascii().map(c -> new CharLiteralExpr(c));
-            case DOUBLE:
-                return Arbitraries.doubles().map(d -> new DoubleLiteralExpr(String.valueOf(d)));
-            case FLOAT: 
-                return Arbitraries.floats().map(f -> new DoubleLiteralExpr(String.valueOf(f)));   
-            case INT:
-                return Arbitraries.integers().map(i -> new IntegerLiteralExpr(String.valueOf(i)));
+            
+            case BOOLEAN:                 
+                return Arbitraries.of(true, false).map(b -> new 
+                        BooleanLiteralExpr(b));
+                
+            case CHAR:                
+                return Arbitraries.chars().ascii().map(c -> new CharLiteralExpr(
+                        c));
+                
+            case DOUBLE:                
+                return Arbitraries.doubles().map(d -> new DoubleLiteralExpr(
+                        String.valueOf(d)));
+                
+            case FLOAT:                 
+                return Arbitraries.floats().map(f -> new DoubleLiteralExpr(
+                        String.valueOf(f)));   
+                
+            case INT:                
+                return Arbitraries.integers().map(i -> new IntegerLiteralExpr(
+                        String.valueOf(i)));
+                
             case LONG:
-                return Arbitraries.longs().map(l -> new LongLiteralExpr(String.valueOf(l)));
-            case BYTE:
-                return Arbitraries.bytes().map(bt -> new IntegerLiteralExpr(String.valueOf(bt)));
+                return Arbitraries.longs().map(l -> new LongLiteralExpr(
+                        String.valueOf(l)));
+                
+            case BYTE:                
+                return Arbitraries.bytes().map(bt -> new IntegerLiteralExpr(
+                        String.valueOf(bt)));
+                
             case SHORT:
-                return Arbitraries.shorts().map(s -> new IntegerLiteralExpr(String.valueOf(s))); 
+                return Arbitraries.shorts().map(s -> new IntegerLiteralExpr(
+                        String.valueOf(s)));
+                
         }
         
         return Arbitraries.just(e);
@@ -285,94 +365,141 @@ public class MainTests {
     
     @Provide
     Arbitrary<LiteralExpr> genPrimitiveString() {
-       return Arbitraries.strings().ascii().map(S -> new StringLiteralExpr(String.valueOf(S)));
+        return Arbitraries.strings().ascii().map(S -> new StringLiteralExpr(
+               String.valueOf(S)));
         
     }
     
-    // Generating expressions
-    
+    // Generating expressions    
     @Provide
     Arbitrary<ObjectCreationExpr> genObjectCreation(Type t) {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genObjectCreation::inicio");
+        
         List<Constructor> constrs;
-
-        System.out.println("genObjectCreation::inicio");
-        System.out.println("genObjectCreation::t = " + t.asString());
+        
+        System.out.println("genObjectCreation::t = " + 
+                t.asClassOrInterfaceType().asString());
+        
         try {
              constrs = this.ct.getClassConstructors(t.asString());
         }
         catch (ClassNotFoundException e) {
-            System.out.println("genObjectCreation::Classe inválida [" + t.asString() + "] = " + e.getMessage());
+            JRGLog.showMessage(Severity.MSG_ERROR, "genObjectCreation"
+                    + "::invalido [" + t.asString() + "] = " + e.getMessage());
+            
             return null;
         }
-        
         
         Arbitrary<Constructor> c = Arbitraries.of(constrs);
 
         // @TODO: fix it later -- avoid the use of sample()
         Constructor constr = c.sample();
         
-        System.out.println("genObjectCreation::constr = " + constr.toString());
+        JRGLog.showMessage(Severity.MSG_DEBUG, "genObjectCreation::constr "
+                + constr.toString());
         
         Class[] params = constr.getParameterTypes();
         
         List<Class> ps = Arrays.asList(params);
         
-        System.out.println("genObjectCreation::ps = " + ps);
+        JRGLog.showMessage(Severity.MSG_DEBUG, "genObjectCreation::ps "  + ps);
         
         List<Type> types = ps.stream()
-                .map((tname) -> ReflectParserTranslator.reflectToParserType(tname.getName()))
+                .map((tname) -> ReflectParserTranslator.reflectToParserType(
+                        tname.getName()))
                 .collect(Collectors.toList());
         
-        System.out.println("genObjectCreation::types = " + types);
+        JRGLog.showMessage(Severity.MSG_DEBUG, "genObjectCreation::types [" 
+                + types +"]");
         
-        System.out.println("genObjectCreation::fim");
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genObjectCreation::fim");
         
-        return genExpressionList(types).map(el -> new ObjectCreationExpr(null, t.asClassOrInterfaceType(), el));
+        return genExpressionList(types).map(el -> new ObjectCreationExpr(null,
+                t.asClassOrInterfaceType(), el));
     }
     
     @Provide
-    Arbitrary<FieldAccessExpr> genAttributeAccess(Type t) throws ClassNotFoundException {
-        Arbitrary<Field> f = genCandidatesField(t.asString());
+    Arbitrary<FieldAccessExpr> genAttributeAccess(Type t)
+            throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genAttributeAccess::inicio");
         
-        System.out.println("genAttributeAccess::inicio");
+        Arbitrary<Field> f = genCandidatesField(t.asString());
         
         Field field = f.sample();
         
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genAttributeAccess::field: "
+                + field.getName());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genAttributeAccess::Class: " 
+                + field.getDeclaringClass().getName());
+        
         Arbitrary<Expression> e = genExpression(ReflectParserTranslator
-                .reflectToParserType(field.getDeclaringClass().toString()));
+                .reflectToParserType(field.getDeclaringClass().getName()));
         
         
-        System.out.println("genAttributeAccess::fim");
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genAttributeAccess::fim");
         
         return e.map(obj -> new FieldAccessExpr(obj, field.getName()));
     }
     
     @Provide
-    Arbitrary<MethodCallExpr> genMethodInvokation(Type t) throws ClassNotFoundException {
+    Arbitrary<MethodCallExpr> genMethodInvokation(Type t) 
+            throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genMethodInvokation::inicio");
+        
+        List<Method> methods;
 
-        Arbitrary<Method> m =  genCandidatesMethods(t.asString());
+        JRGLog.showMessage(Severity.MSG_DEBUG, "genMethodInvokation::t = " 
+                + t.asString());
+        try {        
+            methods = this.ct.getClassMethods(t.asString());
+            
+        }
+        catch (ClassNotFoundException e) {
+            JRGLog.showMessage(Severity.MSG_ERROR, "genMethodInvokation"
+                    + "::invalido ["+ t.asString() + "] = " + e.getMessage());
+
+            return null;
+        }
+
+        Arbitrary<Method> m = Arbitraries.of(methods);
 
         Method method = m.sample();
 
-        Arbitrary<Expression> e = genExpression(ReflectParserTranslator
-                .reflectToParserType(method.getDeclaringClass().toString()));
-        
+        Class[] params = method.getParameterTypes();
 
-       // return genExpressionList().map(el -> new  MethodCallExpr(e.sample(),m,el));
-       return e.map(obj -> new MethodCallExpr(obj, method.getName()));
+        List<Class> ps = Arrays.asList(params);
+
+        JRGLog.showMessage(Severity.MSG_DEBUG, "genObjectCreation::method " 
+                + method.toString());
+
+        Arbitrary<Expression> e = genExpression(ReflectParserTranslator
+        .reflectToParserType(method.getDeclaringClass().toString()));
+
+        List<Type> types = ps.stream()
+        .map((tname) -> ReflectParserTranslator.reflectToParserType(
+                tname.getName()))
+        .collect(Collectors.toList());
+
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "genMethodInvokation::fim");
+
+        return genExpressionList(types).map(el -> new  MethodCallExpr(
+                e.sample(),method.getName(),el));
     }
     
     @Provide 
-   Arbitrary<Method> genCandidatesMethods(String type) throws ClassNotFoundException{
-        List<Method> candidatesMethods ;
+    Arbitrary<Method> genCandidatesMethods(String type) 
+            throws ClassNotFoundException {
+        List<Method> candidatesMethods;
        
         candidatesMethods = this.ct.getCandidateMethods(type);
      
         return Arbitraries.of(candidatesMethods);
     }
     
-   @Provide 
-   Arbitrary<Field> genCandidatesField(String type) throws ClassNotFoundException{
+    @Provide 
+    Arbitrary<Field> genCandidatesField(String type) 
+            throws ClassNotFoundException {
         List<Field> candidatesField;
        
         candidatesField = this.ct.getCandidateFields(type);
@@ -380,8 +507,9 @@ public class MainTests {
         return Arbitraries.of(candidatesField);
     }
    
-   @Provide 
-   Arbitrary<Constructor> genCandidatesConstructors(String type) throws ClassNotFoundException{
+    @Provide 
+    Arbitrary<Constructor> genCandidatesConstructors(String type) 
+            throws ClassNotFoundException {
         List<Constructor> candidatesConstructors ;
        
         candidatesConstructors = this.ct.getCandidateConstructors(type);
