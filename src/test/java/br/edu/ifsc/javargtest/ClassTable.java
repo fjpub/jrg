@@ -5,15 +5,10 @@
  */
 package br.edu.ifsc.javargtest;
 
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.ast.type.PrimitiveType;
-import com.github.javaparser.ast.type.Type;
 import java.util.List;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -22,28 +17,28 @@ import java.util.stream.Collectors;
  */
 public class ClassTable {
     
-    private List<String> imports;
+    private  List<String> mImports;
     
     public ClassTable(List<String> imports) {
-        this.imports = imports;
+        mImports = imports;
        
     }
     
-    public List<String> getTypes() throws ClassNotFoundException {
+    public  List<String> getTypes() throws ClassNotFoundException {
         List<String> list = new ArrayList<>();
         
-        for (String s : this.imports) {
+        for (String s : mImports) {
             list.add(Class.forName(s).getSimpleName());
         }
         
         return list;
     }
     
-    public List<Field> getCandidateFields(String type) 
+    public  List<Field> getCandidateFields(String type) 
             throws ClassNotFoundException {
         List<Field> candidates = new ArrayList<>();
         
-        for (String c : this.imports) {
+        for (String c : mImports) {
             List<Field> flds = getClassFields(c);
             
             List<Field> collect = flds.stream().filter(
@@ -56,11 +51,11 @@ public class ClassTable {
         return candidates;
     }
     
-    public List<Method> getCandidateMethods(String type) 
+    public  List<Method> getCandidateMethods(String type) 
             throws ClassNotFoundException {
         List<Method> candidatesMethod = new ArrayList<>();
     
-        for(String c : this.imports){
+        for(String c : mImports){
             List<Method> mthd = getClassMethods(c);
             
             List<Method> collect = mthd.stream().filter(
@@ -74,7 +69,7 @@ public class ClassTable {
     }
     
     
-     public List<Constructor> getCandidateConstructors(String type) 
+     public  List<Constructor> getCandidateConstructors(String type) 
              throws ClassNotFoundException {
         List<Constructor> candidatesConstructor = new ArrayList<>();
         
@@ -85,7 +80,7 @@ public class ClassTable {
         return candidatesConstructor;
     }
      
-    public List<Field> getClassFields(String cname) 
+    public  List<Field> getClassFields(String cname) 
             throws ClassNotFoundException {
         List<Field> list = new ArrayList<>();
         
@@ -98,7 +93,7 @@ public class ClassTable {
         return list;
     }
     
-    public List<String> getClassFieldTypes(String cname) 
+    public  List<String> getClassFieldTypes(String cname) 
             throws ClassNotFoundException {
         List<String> list = getClassFields(cname).stream()
                 .map(f -> f.getGenericType().getTypeName())
@@ -108,7 +103,7 @@ public class ClassTable {
     }
     
 
-   public List<Method> getClassMethods(String cname) 
+   public  List<Method> getClassMethods(String cname) 
            throws ClassNotFoundException {
         List<Method> list = new ArrayList<>();
 
@@ -122,7 +117,7 @@ public class ClassTable {
     }
     
     
-   public List<Constructor> getClassConstructors(String cname) 
+   public  List<Constructor> getClassConstructors(String cname) 
            throws ClassNotFoundException {
        List<Constructor> list = new ArrayList<>();
        
