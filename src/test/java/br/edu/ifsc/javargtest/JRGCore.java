@@ -6,18 +6,25 @@
 package br.edu.ifsc.javargtest;
 
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.CastExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.type.Type;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import javassist.expr.Cast;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Provide;
@@ -32,12 +39,20 @@ public class JRGCore {
     
     private JRGBase mBase;
     
+    private Map<String,String> mCtx;
+    
     public JRGCore(ClassTable ct , JRGBase base) {
         mCT = ct;
-        
+                
         mBase = base;
         
+        mCtx =  new HashMap<String, String>() {{
+            put("a", "int");
+            put("b", "int");
+            put("c", "br.edu.ifsc.javargexamples.C");
+        }};        
     }
+    
     @Provide
     public  Arbitrary<Expression> genExpression(Type t) {
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genExpression::inicio");
@@ -66,11 +81,15 @@ public class JRGCore {
                     
                 }
                 
-                // Verifica se existem canditados methods
+                // Verifica se existem candidados methods
                 if (!mCT.getCandidateMethods(t.asString()).isEmpty()) {
                     cand.add(Arbitraries.oneOf(genMethodInvokation(t)));
                     
                 }
+                
+                // Verifica se existem candidados cast
+                
+                // Verifica se existem candidados Var
                        
             }
         } 
@@ -210,11 +229,46 @@ public class JRGCore {
                 tname.getName()))
         .collect(Collectors.toList());
 
-        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genMethodInvokation::fim");
+        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, 
+                "genMethodInvokation::fim");
 
         return genExpressionList(types).map(el -> new  MethodCallExpr(
                 e.sample(),method.getName(),el));
     }
+    
+    @Provide
+    public Arbitrary<NameExpr> genVar(Type t){
+        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genVar::inicio");                     
+                
+        List<NameExpr> collect = mCtx.entrySet().stream().filter(
+                e -> e.getValue().equals(t.asString())).map(
+                x -> new NameExpr(x.getKey())).collect(Collectors.toList());                       
+                        
+        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, 
+                "genVar::fim");
+        
+        return Arbitraries.of(collect);    
+    }
+    
+    //Mudar pra type
+    @Provide
+    public Arbitrary<CastExpr> genUpCast(String type) 
+            throws ClassNotFoundException {        
+        List<Class> st = mCT.subTypes2(type);
+        
+        Arbitrary<Class> sc = Arbitraries.of(st);
+        
+        Class c = sc.sample();
+        
+        Arbitrary<Expression> e = genExpression(ReflectParserTranslator.reflectToParserType(c.getName()));
+        
+        return e.map(obj -> new CastExpr(ReflectParserTranslator.reflectToParserType(type), obj));    
+    }
+    
+    
+    //genCandidateUpCast
+    //criar o test (A) new Aextend{}
+       
     
     @Provide 
     public  Arbitrary<Method> genCandidatesMethods(String type) 
@@ -244,5 +298,25 @@ public class JRGCore {
         candidatesConstructors = mCT.getCandidateConstructors(type);
         
         return Arbitraries.of(candidatesConstructors);
-    } 
+    }
+    
+    @Provide
+    public  Arbitrary<Class> genCandidateUpCast(String type)
+    throws ClassNotFoundException {
+        List<Class> upCast ;
+    
+        upCast = mCT.subTypes2(type);
+    
+        return Arbitraries.of(upCast);
+    }
+    
+    
+    //list com variaveis e tipos mecanismo de atribuição
+    //varibledeclarationverbs
+    //varibledeclarationexpr    
+    //variabledeclaration
+    //nameExp
+    //criar genVar()
+    //HASHMAP checkGenVar
+    
 }

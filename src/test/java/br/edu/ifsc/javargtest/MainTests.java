@@ -13,7 +13,6 @@ import java.lang.reflect.Method;
 import java.util.*;
 import net.jqwik.api.*;
 import br.edu.ifsc.javargtest.JRGLog.Severity;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -33,13 +32,17 @@ public class MainTests {
     private JRGCore mCore;
     
     public MainTests() throws FileNotFoundException, IOException {
-        mSkeleton = StaticJavaParser.parse(new File(SKELETON_PATH)); 
+        mSkeleton = StaticJavaParser.parse(new File(SKELETON_PATH));
+        
+        dumpAST();
     
         mCT = new ClassTable(loadImports());
         
         mBase = new JRGBase(mCT);
         
         mCore = new JRGCore(mCT , mBase);
+        
+        
         
         JRGLog.logLevel = Severity.MSG_XDEBUG;
      
@@ -121,7 +124,7 @@ public class MainTests {
         return true;
     }
     
-    @Example
+    //@Example
     boolean checkGenMethodInvokation() throws ClassNotFoundException {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenMethodInvokation"
                 + "::inicio");
@@ -222,5 +225,114 @@ public class MainTests {
         
         return true;
     }
+    
+    //@Example
+    boolean checkGenUpCast() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenUpCast"
+                + "::inicio");
+        
+         Arbitrary<CastExpr> e = mCore.genUpCast("br.edu.ifsc."
+                + "javargexamples.Aextend");
+        
+        System.out.println("CheckGenUpCast: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenUpCast"
+                + "::final");
+        
+        return true;
+    }
+    
+    @Example
+    boolean checkGenVar() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVar"
+                + "::inicio");
+        
+        Arbitrary<NameExpr> e = mCore.genVar(
+                ReflectParserTranslator.reflectToParserType("br.edu.ifsc."
+                + "javargexamples.C"));
+        
+        System.out.println("checkGenVar: " + e.sample());
+        
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVar"
+                + "::final");
+        return true;
+    }
+    
+    //@Example
+    boolean checkSuperTypes() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkSuperTypes"
+                + "::inicio");
+        
+        List<Class> b = mCT.superTypes("br.edu.ifsc."
+                + "javargexamples.AextendExtend");
+        
+        b.forEach((i) -> {
+            System.out.println("SuperTypes: " + i );
+        });
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkSuperTypes"
+                + "::final");
+        
+        return true;
+    }
+    
+    //@Example
+    boolean checkSubTypes() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkSubTypes"
+                + "::inicio");
+        
+        List<Class> b = mCT.subTypes("br.edu.ifsc."
+                + "javargexamples.A");
+        
+         b.forEach((i) -> {
+            System.out.println("subTypes: " + i.toString() );
+        });
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkSubTypes"
+                + "::final");
+        
+        return true;
+    }
+    
+    //@Example
+    boolean checkSubTypes2() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkSubTypes"
+                + "::inicio");
+        
+        List<Class> b = mCT.subTypes2("br.edu.ifsc."
+                + "javargexamples.A");
+        
+         b.forEach((i) -> {
+            System.out.println("subTypes: " + i.toString() );
+        });
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkSubTypes"
+                + "::final");
+        
+        return true;
+    }
+    
+   
+    
+    //@Example
+    boolean checkGenCandidateUpCast() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidateUpCast"
+                + "::inicio");
+        
+        Arbitrary<Class> b = mCore.genCandidateUpCast("br.edu.ifsc."
+                + "javargexamples.A");
+        
+        System.out.println("Candidatos UpCast: " + b.sample().getName());
+         
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidateUpCast"
+                + "::final");
+        
+        return true;
+    }
+    
+    
+    
        
 }

@@ -10,6 +10,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import javassist.expr.Cast;
 
 /**
  *
@@ -103,7 +104,7 @@ public class ClassTable {
     }
     
 
-   public  List<Method> getClassMethods(String cname) 
+    public  List<Method> getClassMethods(String cname) 
            throws ClassNotFoundException {
         List<Method> list = new ArrayList<>();
 
@@ -117,7 +118,7 @@ public class ClassTable {
     }
     
     
-   public  List<Constructor> getClassConstructors(String cname) 
+    public  List<Constructor> getClassConstructors(String cname) 
            throws ClassNotFoundException {
        List<Constructor> list = new ArrayList<>();
        
@@ -129,6 +130,57 @@ public class ClassTable {
        
        return list;
        
-   }
+    }
     
+    public List<Class> superTypes(String cname) throws ClassNotFoundException {
+        List<Class> list = new ArrayList<>();
+        
+        Class c = Class.forName(cname);
+        
+        Class st = c.getSuperclass();      
+               
+        while(st != null) {
+            list.add(st);
+            c = st;
+            st = c.getSuperclass();        
+                       
+        }            
+       
+        return list;    
+    }
+    
+    public  List<Class> subTypes(String cname) throws ClassNotFoundException {
+        List<Class> list = new ArrayList<>();              
+        
+        System.out.println(cname);
+        
+        Class c = Class.forName(cname);
+        
+        list.add(c);
+        
+        if(!cname.equals("java.lang.Object")) {        
+            list.addAll(subTypes(c.getSuperclass().getName()));
+        }    
+        
+        return list;         
+    }
+    
+    public List<Class> subTypes2(String cname) throws ClassNotFoundException {
+        List<Class> list = new ArrayList<>();
+        
+        Class c = Class.forName(cname);
+        
+        for(String cl : this.mImports) {
+            List<Class> st = superTypes(cl);
+            
+            if(st.contains(c)){
+                Class cla = Class.forName(cl);                
+                list.add(cla);
+            }            
+        }
+        
+        return list;
+    }
+   
+           
 }
