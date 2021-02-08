@@ -197,7 +197,7 @@ public class MainTests {
         return true;
     } 
     
-    //@Example
+    @Example
     boolean checkGenExpression() {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenExpression::inicio");
         
@@ -231,8 +231,8 @@ public class MainTests {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenUpCast"
                 + "::inicio");
         
-         Arbitrary<CastExpr> e = mCore.genUpCast("br.edu.ifsc."
-                + "javargexamples.Aextend");
+         Arbitrary<CastExpr> e = mCore.genUpCast(
+                 ReflectParserTranslator.reflectToParserType("int"));
         
         System.out.println("CheckGenUpCast: " + e.sample());
         
@@ -242,7 +242,7 @@ public class MainTests {
         return true;
     }
     
-    @Example
+    //@Example
     boolean checkGenVar() throws ClassNotFoundException {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVar"
                 + "::inicio");
@@ -330,9 +330,6 @@ public class MainTests {
                 + "::final");
         
         return true;
-    }
-    
-    
-    
+    }         
        
 }

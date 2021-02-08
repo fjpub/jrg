@@ -41,6 +41,8 @@ public class JRGCore {
     
     private Map<String,String> mCtx;
     
+    private List<String> mValidNames;
+    
     public JRGCore(ClassTable ct , JRGBase base) {
         mCT = ct;
                 
@@ -50,7 +52,10 @@ public class JRGCore {
             put("a", "int");
             put("b", "int");
             put("c", "br.edu.ifsc.javargexamples.C");
-        }};        
+        }};
+
+        mValidNames = Arrays.asList("a","b","c","d","e","f","g");
+        
     }
     
     @Provide
@@ -88,8 +93,15 @@ public class JRGCore {
                 }
                 
                 // Verifica se existem candidados cast
+                if(!mCT.subTypes2(t.asString()).isEmpty()){
+                    cand.add(Arbitraries.oneOf(genUpCast(t)));
+                    
+                }
                 
                 // Verifica se existem candidados Var
+                if(!mCtx.isEmpty()){
+                    cand.add(Arbitraries.oneOf(genVar(t)));
+                }
                        
             }
         } 
@@ -234,10 +246,10 @@ public class JRGCore {
 
         return genExpressionList(types).map(el -> new  MethodCallExpr(
                 e.sample(),method.getName(),el));
-    }
-    
-    @Provide
-    public Arbitrary<NameExpr> genVar(Type t){
+    }       
+      
+    @Provide    
+    public Arbitrary<NameExpr> genVar(Type t) {
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genVar::inicio");                     
                 
         List<NameExpr> collect = mCtx.entrySet().stream().filter(
@@ -250,11 +262,11 @@ public class JRGCore {
         return Arbitraries.of(collect);    
     }
     
-    //Mudar pra type
+    
     @Provide
-    public Arbitrary<CastExpr> genUpCast(String type) 
+    public Arbitrary<CastExpr> genUpCast(Type t) 
             throws ClassNotFoundException {        
-        List<Class> st = mCT.subTypes2(type);
+        List<Class> st = mCT.subTypes2(t.asString());
         
         Arbitrary<Class> sc = Arbitraries.of(st);
         
@@ -262,12 +274,15 @@ public class JRGCore {
         
         Arbitrary<Expression> e = genExpression(ReflectParserTranslator.reflectToParserType(c.getName()));
         
-        return e.map(obj -> new CastExpr(ReflectParserTranslator.reflectToParserType(type), obj));    
+        return e.map(obj -> new CastExpr(ReflectParserTranslator.reflectToParserType(t.asString()), obj));    
     }
     
+    //genVarDeclarator
+    /*    @Provide
+    public Arbitrary<VariableDeclarator> genVarDeclarator(Type t, String n){
     
-    //genCandidateUpCast
-    //criar o test (A) new Aextend{}
+    
+    }*/
        
     
     @Provide 
