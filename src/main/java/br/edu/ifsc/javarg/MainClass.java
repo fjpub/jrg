@@ -17,7 +17,15 @@ public class MainClass {
         //int a1 = new C().getA().a1;
     public static void main(String args[]) {        
         int num = 10;
+        int a;
         A aObj = new A(num, 2);
+        if(num ==10) {
+             a = 5;
+             System.out.println(a);
+        } else {
+            a = 8;
+        } 
+        System.out.println(a);
     }
     
 }

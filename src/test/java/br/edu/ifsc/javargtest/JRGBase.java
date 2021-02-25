@@ -54,8 +54,10 @@ public class JRGBase {
     @Provide
     public  Arbitrary<LiteralExpr> genPrimitiveString() {
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genPrimitiveString::inicio");
-        return Arbitraries.strings().ascii().map(S -> new StringLiteralExpr(
-               String.valueOf(S)));
+       
+        return Arbitraries.strings().withCharRange('a', 'z')
+                .ofMinLength(1).ofMaxLength(5).map(
+                S -> new StringLiteralExpr(String.valueOf(S)));
         
     }
     

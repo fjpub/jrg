@@ -13,6 +13,8 @@ import java.lang.reflect.Method;
 import java.util.*;
 import net.jqwik.api.*;
 import br.edu.ifsc.javargtest.JRGLog.Severity;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.stmt.BlockStmt;
 
 /**
  *
@@ -31,6 +33,8 @@ public class MainTests {
     
     private JRGCore mCore;
     
+    private JRGStmt mStmt;
+    
     public MainTests() throws FileNotFoundException, IOException {
         mSkeleton = StaticJavaParser.parse(new File(SKELETON_PATH));
         
@@ -40,9 +44,9 @@ public class MainTests {
         
         mBase = new JRGBase(mCT);
         
-        mCore = new JRGCore(mCT , mBase);
+        mCore = new JRGCore(mCT , mBase);       
         
-        
+        mStmt = new JRGStmt(mCT , mBase, mCore);
         
         JRGLog.logLevel = Severity.MSG_XDEBUG;
      
@@ -197,7 +201,7 @@ public class MainTests {
         return true;
     } 
     
-    @Example
+    //@Example
     boolean checkGenExpression() {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenExpression::inicio");
         
@@ -259,6 +263,16 @@ public class MainTests {
         return true;
     }
     
+    @Example
+    boolean checkVariableDeclarator(){
+        Arbitrary<VariableDeclarator> v = mStmt.genVarDeclarator(
+                PrimitiveType.floatType(),"varA");
+        
+        System.out.println("Variavel: " + v.sample());
+        
+        return true;
+    }    
+   
     //@Example
     boolean checkSuperTypes() throws ClassNotFoundException {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkSuperTypes"
@@ -331,5 +345,33 @@ public class MainTests {
         
         return true;
     }         
-       
+     
+    //@Example
+    boolean checkGenBlockStmt() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenBlockStmt::inicio");
+        
+        Arbitrary<BlockStmt> e = mStmt.genBlockStmt(
+                ReflectParserTranslator.reflectToParserType("br.edu.ifsc."
+                + "javargexamples.B"));
+        
+        System.out.println("BlockStmt: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenBlockStmt::fim");
+        
+        return true;
+    }
+    
+    //@Example
+    boolean checkGenVarDeclaration() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVarDeclaration::inicio");
+        
+        Arbitrary<VariableDeclarationExpr> e = mStmt.genVarDeclaration(
+                ReflectParserTranslator.reflectToParserType("float"));
+        
+        System.out.println("checkGengenVarDeclaration: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVarDeclaration::fim");
+        
+        return true;
+    }
 }

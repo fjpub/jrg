@@ -14,6 +14,9 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
+import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.Type;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -24,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import static javafx.scene.input.KeyCode.T;
 import javassist.expr.Cast;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
@@ -129,8 +133,8 @@ public class JRGCore {
         
         return Arbitraries.just(nodes);
     }
+     
     
-       
     @Provide
     public  Arbitrary<ObjectCreationExpr> genObjectCreation(Type t) {
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genObjectCreation::inicio");
@@ -152,7 +156,6 @@ public class JRGCore {
         
         Arbitrary<Constructor> c = Arbitraries.of(constrs);
 
-        // @TODO: fix it later -- avoid the use of sample()
         Constructor constr = c.sample();
         
         JRGLog.showMessage(JRGLog.Severity.MSG_DEBUG, "genObjectCreation::constr "
@@ -260,9 +263,8 @@ public class JRGCore {
                 "genVar::fim");
         
         return Arbitraries.of(collect);    
-    }
-    
-    
+    }  
+        
     @Provide
     public Arbitrary<CastExpr> genUpCast(Type t) 
             throws ClassNotFoundException {        
@@ -272,18 +274,12 @@ public class JRGCore {
         
         Class c = sc.sample();
         
-        Arbitrary<Expression> e = genExpression(ReflectParserTranslator.reflectToParserType(c.getName()));
+        Arbitrary<Expression> e = genExpression(ReflectParserTranslator
+                .reflectToParserType(c.getName()));
         
-        return e.map(obj -> new CastExpr(ReflectParserTranslator.reflectToParserType(t.asString()), obj));    
-    }
-    
-    //genVarDeclarator
-    /*    @Provide
-    public Arbitrary<VariableDeclarator> genVarDeclarator(Type t, String n){
-    
-    
-    }*/
-       
+        return e.map(obj -> new CastExpr(ReflectParserTranslator
+                .reflectToParserType(t.asString()), obj));    
+    } 
     
     @Provide 
     public  Arbitrary<Method> genCandidatesMethods(String type) 
@@ -323,15 +319,5 @@ public class JRGCore {
         upCast = mCT.subTypes2(type);
     
         return Arbitraries.of(upCast);
-    }
-    
-    
-    //list com variaveis e tipos mecanismo de atribuição
-    //varibledeclarationverbs
-    //varibledeclarationexpr    
-    //variabledeclaration
-    //nameExp
-    //criar genVar()
-    //HASHMAP checkGenVar
-    
+    }     
 }
