@@ -8,6 +8,7 @@ package br.edu.ifsc.javargtest;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.CastExpr;
+import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -63,58 +64,35 @@ public class JRGCore {
     }
     
     @Provide
-    public  Arbitrary<Expression> genExpression(Type t) {
-        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genExpression::inicio");
-        
-        Arbitrary<Expression> e;
-        
-        System.out.println("genExpression::t = " + t.asString());
-        
-        List<Arbitrary<Expression>> cand = new ArrayList<>();        
-        
+    public  Arbitrary<Expression> genExpression(Type t) {       
+        Arbitrary<Expression> e;  
+        List<Arbitrary<Expression>> cand = new ArrayList<>();         
         try {
             // Candidatos de tipos primitivos
             if (t.isPrimitiveType()) {
                 cand.add(Arbitraries.oneOf(mBase.genPrimitiveType(
-                        t.asPrimitiveType())));
-                
-            }           
+                        t.asPrimitiveType())));}           
             // Se não for tipo primitivo
             if (!t.isPrimitiveType()) {                 
                 // Candidatos de construtores
-                cand.add(Arbitraries.oneOf(genObjectCreation(t)));
-                
+                cand.add(Arbitraries.oneOf(genObjectCreation(t)));                
                 // Verifica se existem atributos candidatos
                 if (!mCT.getCandidateFields(t.asString()).isEmpty()) {
-                    cand.add(Arbitraries.oneOf(genAttributeAccess(t)));
-                    
-                }
-                
+                    cand.add(Arbitraries.oneOf(genAttributeAccess(t)));}                
                 // Verifica se existem candidados methods
                 if (!mCT.getCandidateMethods(t.asString()).isEmpty()) {
-                    cand.add(Arbitraries.oneOf(genMethodInvokation(t)));
-                    
-                }
-                
+                    cand.add(Arbitraries.oneOf(genMethodInvokation(t)));}                
                 // Verifica se existem candidados cast
                 if(!mCT.subTypes2(t.asString()).isEmpty()){
-                    cand.add(Arbitraries.oneOf(genUpCast(t)));
-                    
-                }
-                
+                    cand.add(Arbitraries.oneOf(genUpCast(t)));}                
                 // Verifica se existem candidados Var
                 if(!mCtx.isEmpty()){
-                    cand.add(Arbitraries.oneOf(genVar(t)));
-                }
-                       
+                    cand.add(Arbitraries.oneOf(genVar(t)));}                     
             }
         } 
         catch (ClassNotFoundException ex) {
             JRGLog.showMessage(JRGLog.Severity.MSG_ERROR, "genExpression");
-        }
-        
-        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genExpression::fim");
-        
+        }         
         return Arbitraries.oneOf(cand);
     }
         
@@ -137,7 +115,8 @@ public class JRGCore {
     
     @Provide
     public  Arbitrary<ObjectCreationExpr> genObjectCreation(Type t) {
-        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genObjectCreation::inicio");
+        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, 
+                "genObjectCreation::inicio");
         
         List<Constructor> constrs;
         
@@ -158,22 +137,23 @@ public class JRGCore {
 
         Constructor constr = c.sample();
         
-        JRGLog.showMessage(JRGLog.Severity.MSG_DEBUG, "genObjectCreation::constr "
+        JRGLog.showMessage(JRGLog.Severity.MSG_DEBUG, "genObjectCreation::constr"
                 + constr.toString());
         
         Class[] params = constr.getParameterTypes();
         
         List<Class> ps = Arrays.asList(params);
         
-        JRGLog.showMessage(JRGLog.Severity.MSG_DEBUG, "genObjectCreation::ps "  + ps);
+        JRGLog.showMessage(JRGLog.Severity.MSG_DEBUG, "genObjectCreation::ps "  
+                + ps);
         
         List<Type> types = ps.stream()
                 .map((tname) -> ReflectParserTranslator.reflectToParserType(
                         tname.getName()))
                 .collect(Collectors.toList());
         
-        JRGLog.showMessage(JRGLog.Severity.MSG_DEBUG, "genObjectCreation::types [" 
-                + types +"]");
+        JRGLog.showMessage(JRGLog.Severity.MSG_DEBUG, "genObjectCreation::types "
+                + "[" + types +"]");
         
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genObjectCreation::fim");
         
@@ -319,5 +299,16 @@ public class JRGCore {
         upCast = mCT.subTypes2(type);
     
         return Arbitraries.of(upCast);
-    }     
+    }   
+    
+    @Provide
+    public Arbitrary<ConditionalExpr> genConditionalExpr(Type t){
+        Expression a = (Expression) genExpression(t);
+        
+        Expression b = (Expression) genExpression(t); 
+        
+        Arbitrary<Expression> e = genExpression(t);
+         
+        return e.map(obj -> new ConditionalExpr(obj, a, b)) ;
+    }
 }

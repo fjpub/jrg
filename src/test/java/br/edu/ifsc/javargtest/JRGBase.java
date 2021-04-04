@@ -31,6 +31,10 @@ public class JRGBase {
     public JRGBase(ClassTable ct) {
         mCT = ct;
     }
+    
+    /*public   RandomTypes() {
+    
+    }*/
         
     @Provide
     public  Arbitrary<ClassOrInterfaceType>  classOrInterfaceTypes() 
@@ -49,6 +53,14 @@ public class JRGBase {
     @Provide
     Arbitrary<PrimitiveType.Primitive> primitiveTypes() {
         return Arbitraries.of(PrimitiveType.Primitive.values());
+    }
+    
+    @Provide
+    Arbitrary<PrimitiveType.Primitive> primitiveTypesMatematicos() {       
+        
+        return Arbitraries.of(PrimitiveType.Primitive.INT,PrimitiveType.Primitive.DOUBLE,
+        PrimitiveType.Primitive.FLOAT,PrimitiveType.Primitive.LONG,
+        PrimitiveType.Primitive.SHORT);
     }
     
     @Provide
@@ -97,8 +109,7 @@ public class JRGBase {
                 
             case SHORT:
                 return Arbitraries.shorts().map(s -> new IntegerLiteralExpr(
-                        String.valueOf(s)));
-                
+                        String.valueOf(s)));                
         }
         
         return Arbitraries.just(e);

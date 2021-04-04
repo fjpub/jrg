@@ -3,21 +3,21 @@ package br.edu.ifsc.javargtest;
 
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.VariableDeclarator;
-import com.github.javaparser.ast.expr.CastExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.LiteralExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.WhileStmt;
+import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Provide;
@@ -33,12 +33,16 @@ public class JRGStmt {
     
     private JRGCore mCore;
     
-    public JRGStmt(ClassTable ct , JRGBase base, JRGCore core) {
+    private JRGOperator mOperator; 
+    
+    public JRGStmt(ClassTable ct , JRGBase base, JRGCore core, JRGOperator operator) {
         mCT = ct;
                 
         mBase = base;
         
         mCore = core;
+        
+        mOperator = operator;
         
         mCtx =  new HashMap<String, String>() {{
             put("a", "int");
@@ -48,16 +52,28 @@ public class JRGStmt {
 
         mValidNames = Arrays.asList("a","b","c","d","e","f","g");
         
+        
+    }
+    @Provide
+    public Arbitrary<VariableDeclarationExpr> genVarDeclaration(Type t, String n) {
+        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genVarDeclaration::inicio");       
+        
+        Arbitrary<VariableDeclarator> e = genVarDeclarator(t,n);
+       
+        
+        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genVarDeclaration::fim"); 
+        
+        return e.map(obj -> new VariableDeclarationExpr(obj));
     }
     
-    @Provide
+   @Provide
     public  Arbitrary<Statement> genStatement() {
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genStatement::inicio");       
         //Gerar todos o possiveis statement menos o block   
         
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genStatement::fim");   
-        
-        return Arbitraries.oneOf(genIfStmt(), genWhileStmt());
+        //genWhileStmt(),
+        return Arbitraries.oneOf(genIfStmt(), genWhileStmt(), genExpressionStmt());
     } 
     
     @Provide
@@ -90,8 +106,7 @@ public class JRGStmt {
     public Arbitrary<VariableDeclarator> genVarDeclarator(Type t, String n) {
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genVarDeclarator::inicio");
         
-        Arbitrary<Expression> e = mCore.genExpression(t);
-        
+        Arbitrary<Expression> e = mCore.genExpression(t);       
        
          
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genVarDeclarator::fim");
@@ -99,32 +114,45 @@ public class JRGStmt {
     }    
     
     @Provide
-    public Arbitrary<VariableDeclarationExpr> genVarDeclaration(Type t) {
-        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genVarDeclaration::inicio");       
-                
-        
-        JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genVarDeclaration::fim"); 
-        
-        return null;
-    }
-    
-    @Provide
     public Arbitrary<IfStmt> genIfStmt() {
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genIfStmt::inicio");       
-                       
+        Arbitrary<BinaryExpr> a = mOperator.genOpExpression();
         
+        Arbitrary<Expression> e = mCore.genExpression(PrimitiveType.booleanType());       
+                
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genIfStmt::fim"); 
-        return null;
+       //mOperator.genOpExpression().sample()
+        return e.map(exp -> new IfStmt(exp
+                ,genStatement().sample(),genStatement().sample()));
+        //return e.map(exp -> genStatement()
+        //.map(thenStmt -> genStatement()
+        //.map(elseStmt -> new IfStmt(exp,thenStmt,elseStmt))));
     }
     
     @Provide
     public Arbitrary<WhileStmt> genWhileStmt() {
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genWhileStmt::inicio");       
                        
+        Arbitrary<Expression> e = mCore.genExpression(PrimitiveType.booleanType());
         
         JRGLog.showMessage(JRGLog.Severity.MSG_XDEBUG, "genWhileStmt::fim"); 
-        return null;
+        return e.map(exp -> new WhileStmt(exp,genStatement().sample()));
     }   
     
+    @Provide
+    public Arbitrary<ExpressionStmt> genExpressionStmt(){
+        //@TODO: Sortear o tipo aleatoriamente e passar para genExpression
+        Arbitrary<PrimitiveType.Primitive> t = mBase.primitiveTypes();
+         
+        Arbitrary<Expression> e = mCore.genExpression(ReflectParserTranslator
+                .reflectToParserType(t.sample().toString()));
+        
+        return e.map(exp -> new ExpressionStmt(exp));
+    }
+    //Mandar artigo OK
+    //VarSTMT ??  
+    //estudar o item jqwk "Limitador de recursão"
+    //operadores relacionais e lógicos SemiConcluido
+    //Criar classe JRGOperator OK
     
 }

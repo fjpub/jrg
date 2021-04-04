@@ -19,7 +19,7 @@ public class MainClass {
         int num = 10;
         int a;
         A aObj = new A(num, 2);
-        if(num ==10) {
+        if(num == 10) {
              a = 5;
              System.out.println(a);
         } else {

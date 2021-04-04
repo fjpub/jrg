@@ -15,6 +15,8 @@ import net.jqwik.api.*;
 import br.edu.ifsc.javargtest.JRGLog.Severity;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.stmt.WhileStmt;
 
 /**
  *
@@ -35,6 +37,8 @@ public class MainTests {
     
     private JRGStmt mStmt;
     
+    private JRGOperator mOperator;
+    
     public MainTests() throws FileNotFoundException, IOException {
         mSkeleton = StaticJavaParser.parse(new File(SKELETON_PATH));
         
@@ -46,7 +50,9 @@ public class MainTests {
         
         mCore = new JRGCore(mCT , mBase);       
         
-        mStmt = new JRGStmt(mCT , mBase, mCore);
+        mStmt = new JRGStmt(mCT , mBase, mCore, mOperator);
+        
+        mOperator = new JRGOperator(mCT , mBase , mCore, mStmt);
         
         JRGLog.logLevel = Severity.MSG_XDEBUG;
      
@@ -185,13 +191,13 @@ public class MainTests {
         return true;
     } 
     
-    //@Example
+   // @Example
     boolean checkGenCandidatesConstructors() throws ClassNotFoundException {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenCandidatesConstructors"
                 + "::inicio");
         
-        Arbitrary<Constructor> b = mCore.genCandidatesConstructors("br.edu.ifsc."
-                + "javargexamples.B");
+        Arbitrary<Constructor> b = mCore.genCandidatesConstructors("br.edu."
+                + "ifsc.javargexamples.B");
         
         System.out.println("Candidatos Constructors: " + b.sample());
         
@@ -263,7 +269,7 @@ public class MainTests {
         return true;
     }
     
-    @Example
+    //@Example
     boolean checkVariableDeclarator(){
         Arbitrary<VariableDeclarator> v = mStmt.genVarDeclarator(
                 PrimitiveType.floatType(),"varA");
@@ -366,6 +372,20 @@ public class MainTests {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVarDeclaration::inicio");
         
         Arbitrary<VariableDeclarationExpr> e = mStmt.genVarDeclaration(
+                ReflectParserTranslator.reflectToParserType("int"),"varA");
+        
+        System.out.println("checkGengenVarDeclaration: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVarDeclaration::fim");
+        
+        return true;
+    }
+    
+    //@Example
+    boolean checkGenConditionalExpr() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVarDeclaration::inicio");
+        
+        Arbitrary<ConditionalExpr> e = mCore.genConditionalExpr(
                 ReflectParserTranslator.reflectToParserType("float"));
         
         System.out.println("checkGengenVarDeclaration: " + e.sample());
@@ -374,4 +394,71 @@ public class MainTests {
         
         return true;
     }
+    
+     @Example 
+     boolean checkGenIfStmt() throws ClassNotFoundException {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenIfStmt::inicio");
+        
+        Arbitrary<IfStmt> e = mStmt.genIfStmt();
+        
+        System.out.println("checkGenIfStmt: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenIfStmt::fim");
+        
+        return true;
+    }
+     
+    //@Example
+    boolean checkWhileStmt() {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkWhileStmt::inicio");
+        
+        Arbitrary<WhileStmt> e = mStmt.genWhileStmt();
+        
+        System.out.println("checkWhileStmt: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkWhileStmt::fim");
+        
+        return true;
+        
+    }
+    
+    //@Example
+    boolean checkGenOpExpression() {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenOpExpression::inicio");
+        
+        Arbitrary<BinaryExpr> e = mOperator.genOpExpression();
+        
+        System.out.println("checkGenOpExpression: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenOpExpression::fim");
+        
+        return true;
+    }
+    
+    //@Example
+    boolean checkGenAuExpression() {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenAuExpression::inicio");
+        
+        Arbitrary<BinaryExpr> e = mOperator.genAuExpression();
+        
+        System.out.println("checkGenAuExpression: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenAuExpression::fim");
+        
+        return true;
+    }
+    
+    //@Example
+    boolean checkGenMaExpression() {
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenMaExpression::inicio");
+        
+        Arbitrary<BinaryExpr> e = mOperator.genMaExpression();
+        
+        System.out.println("checkGenAuExpression: " + e.sample());
+        
+        JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenMaExpression::fim");
+        
+        return true;
+    }
+    
 }

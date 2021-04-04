@@ -17,7 +17,7 @@ public class ReflectParserTranslator {
     
     public static Type reflectToParserType(String tname) {
         
-        switch (tname) {
+        switch (tname.toLowerCase()) {
             case "int":
                 return PrimitiveType.intType();
             case "float":
@@ -33,7 +33,7 @@ public class ReflectParserTranslator {
             case "byte":
                 return PrimitiveType.byteType();
             case "short":
-                return PrimitiveType.shortType();
+                return PrimitiveType.shortType();   
             default:
                 break;
         }
