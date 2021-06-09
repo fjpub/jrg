@@ -422,7 +422,7 @@ public class MainTests {
         return true;
     }
     
-    //@Example
+    @Example
     boolean checkGenRelaExpression() {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenRelaExpression::inicio");
         
