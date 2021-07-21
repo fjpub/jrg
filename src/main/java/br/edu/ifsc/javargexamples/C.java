@@ -11,27 +11,27 @@ package br.edu.ifsc.javargexamples;
  */
 public class C {
     
-    public A aInC;
-    public B bInC;
+   // public A aInC;
+    //public B bInC;
     
-    public C(A a, B b) {
-        aInC = a;
-        bInC = b;
+    /*  public C(A a, B b) {
+    aInC = a;
+    bInC = b;
     }
     
     public void setA(A a) {
-        this.aInC = a;
+    this.aInC = a;
     }
     
     public A getA() {
-        return aInC;
+    return aInC;
     }
     
     public void setB(B b) {
-        this.bInC = b;
+    this.bInC = b;
     }
     
     public B getB() {
-        return bInC;
-    }
+    return bInC;
+    }*/
 }

@@ -37,7 +37,7 @@ public class ReflectParserTranslator {
             default:
                 break;
         }
-      
+        
         return new ClassOrInterfaceType(null, tname);
     }
     

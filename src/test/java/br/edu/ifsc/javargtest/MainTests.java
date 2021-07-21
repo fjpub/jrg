@@ -17,6 +17,7 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.WhileStmt;
+import net.jqwik.api.lifecycle.BeforeProperty;
 
 /**
  *
@@ -43,8 +44,14 @@ public class MainTests {
         mSkeleton = StaticJavaParser.parse(new File(SKELETON_PATH));
         
         dumpAST();
+        
+        JRGLog.logLevel = Severity.MSG_ERROR;
+     
+    }
     
-        mCT = new ClassTable(loadImports());
+    @BeforeProperty
+    public void createObjects() {
+         mCT = new ClassTable(loadImports());
         
         mBase = new JRGBase(mCT);
         
@@ -53,9 +60,6 @@ public class MainTests {
         mStmt = new JRGStmt(mCT , mBase, mCore, mOperator);
         
         mOperator = new JRGOperator(mCT , mBase , mCore, mStmt);
-        
-        JRGLog.logLevel = Severity.MSG_XDEBUG;
-     
     }
     
     // Auxiliary methods    
@@ -141,9 +145,9 @@ public class MainTests {
         
         ClassOrInterfaceType c = new ClassOrInterfaceType();
         
-        c.setName("br.edu.ifsc.javargexamples.A");
-        
-        Arbitrary<MethodCallExpr> e = mCore.genMethodInvokation(c);
+        c.setName("br.edu.ifsc.javargexamples.B");
+        //Arbitrary<MethodCallExpr> e = mCore.genMethodInvokation(c);
+        Arbitrary<MethodCallExpr> e = mCore.genMethodInvokation(ReflectParserTranslator.reflectToParserType("int"));
         
         if (e != null) {
             System.out.println("Method gerado: " + e.sample().toString());
@@ -207,13 +211,15 @@ public class MainTests {
         return true;
     } 
     
-    //@Example
+    @Property(tries = 5)
     boolean checkGenExpression() {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenExpression::inicio");
         
-        Arbitrary<Expression> e = mCore.genExpression(
-                ReflectParserTranslator.reflectToParserType("int"));
+        mCore.resetFuel();
         
+        Arbitrary<Expression> e = mCore.genExpression(
+                ReflectParserTranslator.reflectToParserType("int"));      
+                
         System.out.println("Expressão gerada: " + e.sample());
         
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenExpression::fim");
@@ -242,7 +248,8 @@ public class MainTests {
                 + "::inicio");
         
          Arbitrary<CastExpr> e = mCore.genUpCast(
-                 ReflectParserTranslator.reflectToParserType("int"));
+                 ReflectParserTranslator.reflectToParserType("br.edu.ifsc."
+                + "javargexamples.Aextend"));
         
         System.out.println("CheckGenUpCast: " + e.sample());
         
@@ -252,14 +259,13 @@ public class MainTests {
         return true;
     }
     
-    //@Example
+    //@Property
     boolean checkGenVar() throws ClassNotFoundException {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenVar"
                 + "::inicio");
         
         Arbitrary<NameExpr> e = mCore.genVar(
-                ReflectParserTranslator.reflectToParserType("br.edu.ifsc."
-                + "javargexamples.C"));
+                ReflectParserTranslator.reflectToParserType("float"));
         
         System.out.println("checkGenVar: " + e.sample());
         
@@ -422,7 +428,7 @@ public class MainTests {
         return true;
     }
     
-    @Example
+    //@Example
     boolean checkGenRelaExpression() {
         JRGLog.showMessage(Severity.MSG_XDEBUG, "checkGenRelaExpression::inicio");
         

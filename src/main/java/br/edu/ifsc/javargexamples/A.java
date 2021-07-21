@@ -23,7 +23,7 @@ public class A {
         this.a1 = a1;
     }
     
-    public int getA1() {
+    public int getA1(int b) {
         return a1;
     }
     
